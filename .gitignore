@@ -27,3 +27,24 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime configuration
+.env
+.env.local
+.env.production
+
+# Secrets
+.secrets/
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Cloudflare
+deploy/cloudflared/*.json
+deploy/cloudflared/token
+
+# Runtime state
+runtime/
+volumes/

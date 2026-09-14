@@ -1,0 +1,44 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - orbitalai-prometheus:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana:13.2.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - orbitalai-grafana:/var/lib/grafana
+      - ../../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      - observability
+    depends_on:
+      - prometheus
+
+networks:
+  observability:
+    name: orbitalai-observability
+
+volumes:
+  orbitalai-prometheus:
+    name: orbitalai-prometheus
+
+  orbitalai-grafana:
+    name: orbitalai-grafana
