@@ -17,6 +17,7 @@ COPY pyproject.toml README.md ./
 COPY backend ./backend
 COPY ingestion ./ingestion
 COPY orbital_engine ./orbital_engine
+COPY workers ./workers
 COPY migrations ./migrations
 COPY alembic.ini ./
 
