@@ -10,3 +10,6 @@ data
 runtime
 volumes
 frontend/node_modules
+
+**/__pycache__/
+**/*.py[cod]

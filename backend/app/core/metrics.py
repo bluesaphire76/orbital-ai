@@ -1,4 +1,10 @@
-from prometheus_client import Gauge
+from __future__ import annotations
+
+from prometheus_client import Gauge, REGISTRY
+
+from backend.app.observability.propagation_metrics import (
+    PropagationMetricsCollector,
+)
 
 
 PLATFORM_INFO = Gauge(
@@ -7,6 +13,21 @@ PLATFORM_INFO = Gauge(
     ["service"],
 )
 
+_initialized = False
+
 
 def initialize_metrics() -> None:
-    PLATFORM_INFO.labels(service="api").set(1)
+    global _initialized
+
+    if _initialized:
+        return
+
+    PLATFORM_INFO.labels(
+        service="api",
+    ).set(1)
+
+    REGISTRY.register(
+        PropagationMetricsCollector()
+    )
+
+    _initialized = True

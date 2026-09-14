@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.db.models.orbital_element import OrbitalElement
@@ -55,3 +55,46 @@ class OrbitalElementRepository:
         self._session.flush()
 
         return orbital_element, True
+
+    def list_latest(
+        self,
+        *,
+        source: str = "celestrak",
+    ) -> list[OrbitalElement]:
+        ranked = (
+            select(
+                OrbitalElement.id.label("element_id"),
+                func.row_number()
+                .over(
+                    partition_by=OrbitalElement.orbital_object_id,
+                    order_by=(
+                        OrbitalElement.epoch.desc(),
+                        OrbitalElement.id.desc(),
+                    ),
+                )
+                .label("row_number"),
+            )
+            .where(
+                OrbitalElement.source == source
+            )
+            .subquery()
+        )
+
+        statement = (
+            select(OrbitalElement)
+            .join(
+                ranked,
+                OrbitalElement.id
+                == ranked.c.element_id,
+            )
+            .where(
+                ranked.c.row_number == 1
+            )
+            .order_by(
+                OrbitalElement.orbital_object_id
+            )
+        )
+
+        return list(
+            self._session.scalars(statement)
+        )
