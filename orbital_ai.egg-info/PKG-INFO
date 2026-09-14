@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: orbital-ai
+Version: 0.1.0
+Summary: Local-first orbital intelligence and conjunction assessment platform
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: httpx
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: pydantic
+Requires-Dist: scipy
+Requires-Dist: sgp4
+Requires-Dist: skyfield
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+
+# OrbitalAI
+
+Local-first orbital intelligence and conjunction assessment platform.
+
+## Initial goals
+
+- Ingest public orbital object data
+- Maintain a local orbital catalogue
+- Propagate orbital trajectories
+- Detect potential conjunctions
+- Calculate miss distance and relative velocity
+- Track conjunction risk over time
+- Generate alerts
+- Add local AI-assisted risk interpretation and prioritisation
+
+## Architecture principle
+
+Orbital mechanics and collision calculations are deterministic.
+
+AI is used for:
+- prioritisation
+- anomaly detection
+- trend analysis
+- explanation
+- decision support
+
+AI is not the authoritative source for orbital propagation or collision probability.

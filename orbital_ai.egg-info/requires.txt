@@ -1,0 +1,10 @@
+httpx
+numpy
+pandas
+pydantic
+scipy
+sgp4
+skyfield
+
+[dev]
+pytest
