@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbital-ai"
+version = "0.1.0"
+description = "Local-first orbital intelligence and conjunction assessment platform"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx",
+    "numpy",
+    "pandas",
+    "pydantic",
+    "scipy",
+    "sgp4",
+    "skyfield",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "ingestion*",
+    "orbital_engine*",
+    "scripts*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
