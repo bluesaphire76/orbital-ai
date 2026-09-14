@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from backend.app.db.session import get_session_factory
-from backend.app.services.orbital_catalog import (
+from backend.app.services.celestrak_sync import (
     sync_celestrak_records,
 )
 from ingestion.celestrak import fetch_gp_by_catnr
@@ -13,8 +13,8 @@ from ingestion.celestrak import fetch_gp_by_catnr
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Synchronize a CelesTrak object "
-            "into the OrbitalAI catalog."
+            "Synchronize a CelesTrak object and orbital "
+            "elements into the OrbitalAI catalog."
         )
     )
 
@@ -52,18 +52,12 @@ def main() -> None:
         else "CelesTrak"
     )
 
-    print(
-        f"Source: {source}"
-    )
-    print(
-        f"Processed: {result.total}"
-    )
-    print(
-        f"Created: {result.created}"
-    )
-    print(
-        f"Updated: {result.updated}"
-    )
+    print(f"Source: {source}")
+    print(f"Records: {result.records}")
+    print(f"Objects created: {result.objects_created}")
+    print(f"Objects updated: {result.objects_updated}")
+    print(f"Elements created: {result.elements_created}")
+    print(f"Elements existing: {result.elements_existing}")
 
 
 if __name__ == "__main__":
