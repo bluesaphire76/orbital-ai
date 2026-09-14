@@ -17,6 +17,9 @@ COPY pyproject.toml README.md ./
 COPY backend ./backend
 COPY ingestion ./ingestion
 COPY orbital_engine ./orbital_engine
+COPY migrations ./migrations
+COPY alembic.ini ./
+
 
 RUN python -m pip install --upgrade pip \
     && python -m pip install ".[platform]" \

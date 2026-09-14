@@ -8,11 +8,10 @@ from sqlalchemy.engine import Engine
 from backend.app.core.config import get_settings
 
 
-@lru_cache
-def get_engine() -> Engine:
+def build_database_url() -> URL:
     settings = get_settings()
 
-    url = URL.create(
+    return URL.create(
         drivername="postgresql+psycopg",
         username=settings.postgres_user,
         password=settings.postgres_password,
@@ -21,8 +20,11 @@ def get_engine() -> Engine:
         database=settings.postgres_db,
     )
 
+
+@lru_cache
+def get_engine() -> Engine:
     return create_engine(
-        url,
+        build_database_url(),
         pool_pre_ping=True,
     )
 
