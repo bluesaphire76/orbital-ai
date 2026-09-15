@@ -815,7 +815,7 @@ input {
     grid;
 
   grid-template-columns:
-    38px 180px
+    82px 180px
     minmax(
       100px,
       1fr
@@ -1517,4 +1517,436 @@ input {
 
   text-transform:
     uppercase;
+}
+
+
+.timelinePlayback {
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(
+      160px,
+      1fr
+    )
+    auto;
+
+  align-items:
+    center;
+
+  gap:
+    14px;
+
+  min-width:
+    0;
+}
+
+
+.timelineScrubber {
+  width:
+    100%;
+
+  accent-color:
+    var(--accent);
+
+  cursor:
+    pointer;
+}
+
+
+.timelineScrubber:disabled {
+  cursor:
+    default;
+
+  opacity:
+    0.35;
+}
+
+
+.playbackSpeeds {
+  display:
+    flex;
+
+  gap:
+    4px;
+}
+
+
+.playbackSpeeds button {
+  min-width:
+    36px;
+
+  padding:
+    5px 7px;
+
+  border:
+    1px solid
+    var(--border);
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.02
+    );
+
+  color:
+    var(--muted);
+
+  cursor:
+    pointer;
+
+  font-family:
+    monospace;
+
+  font-size:
+    8px;
+}
+
+
+.playbackSpeeds button.active {
+  border-color:
+    var(--accent);
+
+  background:
+    rgba(
+      85,
+      214,
+      239,
+      0.09
+    );
+
+  color:
+    var(--accent);
+}
+
+
+.playbackSpeeds button:disabled {
+  cursor:
+    default;
+
+  opacity:
+    0.35;
+}
+
+
+.timelineRetry {
+  margin-left:
+    8px;
+
+  border:
+    0;
+
+  background:
+    transparent;
+
+  color:
+    var(--danger);
+
+  cursor:
+    pointer;
+
+  font-size:
+    8px;
+}
+
+
+.timeReadout small {
+  display:
+    block;
+
+  margin-top:
+    3px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    7px;
+
+  letter-spacing:
+    0.7px;
+}
+
+
+/* Orbital playback primary control */
+.operationsTimeline .playButton {
+  width:
+    78px;
+
+  height:
+    34px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    8px;
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid
+    var(--accent);
+
+  border-radius:
+    3px;
+
+  background:
+    rgba(
+      85,
+      214,
+      239,
+      0.08
+    );
+
+  color:
+    var(--accent);
+
+  cursor:
+    pointer;
+
+  font-family:
+    monospace;
+
+  font-size:
+    9px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    1px;
+}
+
+
+.operationsTimeline
+.playButton:hover:not(:disabled) {
+  background:
+    rgba(
+      85,
+      214,
+      239,
+      0.16
+    );
+
+  box-shadow:
+    0 0 12px
+    rgba(
+      85,
+      214,
+      239,
+      0.12
+    );
+}
+
+
+.operationsTimeline
+.playButton:disabled {
+  opacity:
+    0.35;
+
+  cursor:
+    default;
+}
+
+
+.playButtonIcon {
+  font-size:
+    9px;
+}
+
+
+.conjunctionEmpty {
+  padding:
+    9px 0;
+
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+
+  line-height:
+    1.5;
+}
+
+
+.conjunctionEventList {
+  display:
+    grid;
+
+  gap:
+    8px;
+}
+
+
+.conjunctionEventCard {
+  padding:
+    9px;
+
+  border:
+    1px solid
+    rgba(
+      240,
+      111,
+      116,
+      0.18
+    );
+
+  background:
+    rgba(
+      240,
+      111,
+      116,
+      0.035
+    );
+}
+
+
+.conjunctionEventPair {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  margin-bottom:
+    8px;
+
+  font-size:
+    9px;
+}
+
+
+.conjunctionEventPair span {
+  color:
+    var(--danger);
+}
+
+
+.conjunctionEventMetric {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  gap:
+    8px;
+
+  padding:
+    3px 0;
+}
+
+
+.conjunctionEventMetric span {
+  color:
+    var(--muted);
+
+  font-size:
+    7px;
+
+  letter-spacing:
+    0.8px;
+}
+
+
+.conjunctionEventMetric strong {
+  font-family:
+    monospace;
+
+  font-size:
+    8px;
+
+  font-weight:
+    400;
+
+  text-align:
+    right;
+}
+
+
+.conjunctionEventCard button {
+  width:
+    100%;
+
+  margin-top:
+    8px;
+
+  padding:
+    6px;
+
+  border:
+    1px solid
+    rgba(
+      240,
+      111,
+      116,
+      0.35
+    );
+
+  background:
+    rgba(
+      240,
+      111,
+      116,
+      0.06
+    );
+
+  color:
+    var(--danger);
+
+  cursor:
+    pointer;
+
+  font-size:
+    8px;
+
+  letter-spacing:
+    0.8px;
+}
+
+
+.conjunctionEventCard
+button:disabled {
+  opacity:
+    0.35;
+
+  cursor:
+    default;
+}
+
+
+.conjunctionEventCard.active {
+  border-color:
+    rgba(
+      240,
+      111,
+      116,
+      0.65
+    );
+
+  background:
+    rgba(
+      240,
+      111,
+      116,
+      0.09
+    );
+
+  box-shadow:
+    inset 3px 0 0
+    var(--danger);
 }

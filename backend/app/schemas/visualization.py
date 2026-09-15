@@ -59,3 +59,33 @@ class ObjectTrajectory(BaseModel):
     points: list[
         TrajectoryPoint
     ]
+
+
+class PlaybackObject(BaseModel):
+    object_id: int
+    norad_cat_id: int
+    object_name: str
+    object_type: str | None
+
+    epoch: datetime
+    ephemeris_status: str
+
+    points: list[
+        TrajectoryPoint
+    ]
+
+
+class VisualizationPlayback(BaseModel):
+    start: datetime
+    end: datetime
+    step_seconds: int
+    frame: str
+
+    objects: list[
+        PlaybackObject
+    ]
+
+    total_elements: int
+    rendered_objects: int
+    expired_skips: int
+    propagation_failures: int

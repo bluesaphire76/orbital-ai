@@ -10,8 +10,20 @@ import {
   useOrbitalView,
 } from "@/components/globe/orbital-view-context";
 
+import {
+  useOrbitalPlayback,
+} from "@/components/playback/orbital-playback-context";
+
+import {
+  useConjunctionFocus,
+} from "@/components/conjunction/conjunction-focus-context";
+
 import type {
-  ObjectTrajectory,
+  ConjunctionEvent,
+} from "@/types/conjunction";
+
+
+import type {
   VisualizationObject,
   VisualizationSnapshot,
 } from "@/types/visualization";
@@ -26,6 +38,9 @@ type CesiumWindow =
 interface OrbitalGlobeProps {
   snapshot:
     VisualizationSnapshot | null;
+
+  conjunctionEvents:
+    ConjunctionEvent[];
 }
 
 
@@ -67,12 +82,27 @@ function approximateAltitudeKm(
 
 export function OrbitalGlobe({
   snapshot,
+  conjunctionEvents,
 }: OrbitalGlobeProps) {
   const {
     layers,
     viewMode,
     imageryMode,
   } = useOrbitalView();
+
+  const {
+    playback,
+    isPlaying,
+    speed,
+    seekRequest,
+    reportClockTime,
+    setIsPlaying,
+  } = useOrbitalPlayback();
+
+  const {
+    activeEventId:
+      activeConjunctionEventId,
+  } = useConjunctionFocus();
   const containerRef =
     useRef<HTMLDivElement | null>(
       null,
@@ -672,158 +702,6 @@ export function OrbitalGlobe({
       }
 
 
-      async function loadTrajectory(
-        object:
-          VisualizationObject,
-      ) {
-        setLoadingIds(
-          current =>
-            current.includes(
-              object.object_id
-            )
-              ? current
-              : [
-                  ...current,
-                  object.object_id,
-                ],
-        );
-
-
-        setTrajectoryError(
-          null,
-        );
-
-
-        try {
-          const start =
-            snapshot?.at
-            ?? new Date()
-              .toISOString();
-
-
-          const endDate =
-            new Date(
-              start
-            );
-
-
-          endDate.setUTCHours(
-            endDate.getUTCHours()
-            + 2,
-          );
-
-
-          const params =
-            new URLSearchParams({
-              start,
-
-              end:
-                endDate
-                  .toISOString(),
-
-              step_seconds:
-                "60",
-            });
-
-
-          const response =
-            await fetch(
-              `/api/visualization/objects/${object.object_id}/trajectory?${params}`,
-              {
-                cache:
-                  "no-store",
-              },
-            );
-
-
-          if (!response.ok) {
-            throw new Error(
-              `Trajectory request failed (${response.status})`,
-            );
-          }
-
-
-          const trajectory =
-            (await response.json()) as ObjectTrajectory;
-
-
-          if (
-            disposed
-            || viewer.isDestroyed()
-          ) {
-            return;
-          }
-
-
-          viewer.entities.removeById(
-            `trajectory-${object.object_id}`,
-          );
-
-
-          const positions =
-            trajectory.points.map(
-              point =>
-                Cesium
-                  .Cartesian3
-                  .fromElements(
-                    point.x_m,
-                    point.y_m,
-                    point.z_m,
-                  ),
-            );
-
-
-          viewer.entities.add({
-            id:
-              `trajectory-${object.object_id}`,
-
-            name:
-              `${trajectory.object_name} trajectory`,
-
-            show:
-              layersRef.current
-                .trajectories,
-
-            polyline: {
-              positions,
-
-              width: 2.5,
-
-              arcType:
-                Cesium
-                  .ArcType
-                  .NONE,
-
-              material:
-                trajectoryColor(
-                  object.object_id,
-                )
-                  .withAlpha(
-                    0.9,
-                  ),
-            },
-          });
-
-        } catch (error) {
-          setTrajectoryError(
-            error instanceof Error
-              ? error.message
-              : "Trajectory loading failed",
-          );
-
-        } finally {
-          setLoadingIds(
-            current =>
-              current.filter(
-                id =>
-                  id
-                  !== object.object_id,
-              ),
-          );
-        }
-      }
-
-
       async function focusObject(
         objectId: number,
       ) {
@@ -944,9 +822,6 @@ export function OrbitalGlobe({
           syncSelectedState();
 
 
-          void loadTrajectory(
-            object
-          );
         }
 
 
@@ -1274,6 +1149,16 @@ export function OrbitalGlobe({
                   );
             }
 
+
+            if (entity.path) {
+              entity.path.show =
+                new Cesium
+                  .ConstantProperty(
+                    layers
+                      .trajectories
+                  );
+            }
+
             continue;
           }
 
@@ -1519,6 +1404,1044 @@ export function OrbitalGlobe({
 
   }, [
     imageryMode,
+    ready,
+  ]);
+
+
+  /*
+   * Playback positions are generated
+   * deterministically by the backend.
+   *
+   * Cesium only interpolates between
+   * those authoritative samples for
+   * visualization.
+   */
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !playback
+    ) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+    let removeTickListener:
+      (() => void)
+      | undefined;
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          cancelled
+          || viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        for (
+          const object
+          of playback.objects
+        ) {
+          const entity =
+            viewer.entities
+              .getById(
+                `orbital-object-${object.object_id}`
+              );
+
+
+          if (!entity) {
+            continue;
+          }
+
+
+          const position =
+            new Cesium
+              .SampledPositionProperty();
+
+
+          for (
+            const point
+            of object.points
+          ) {
+            position.addSample(
+              Cesium
+                .JulianDate
+                .fromIso8601(
+                  point.at
+                ),
+
+              Cesium
+                .Cartesian3
+                .fromElements(
+                  point.x_m,
+                  point.y_m,
+                  point.z_m,
+                ),
+            );
+          }
+
+
+          /*
+           * Linear interpolation is
+           * intentionally used here.
+           * This is visualization only,
+           * never an orbital calculation.
+           */
+          position
+            .setInterpolationOptions({
+              interpolationAlgorithm:
+                Cesium
+                  .LinearApproximation,
+
+              interpolationDegree:
+                1,
+            });
+
+
+          entity.position =
+            position;
+        }
+
+
+        const start =
+          Cesium
+            .JulianDate
+            .fromIso8601(
+              playback.start
+            );
+
+        const stop =
+          Cesium
+            .JulianDate
+            .fromIso8601(
+              playback.end
+            );
+
+
+        viewer.clock.startTime =
+          start.clone();
+
+        viewer.clock.stopTime =
+          stop.clone();
+
+        viewer.clock.currentTime =
+          start.clone();
+
+
+        viewer.clock.clockRange =
+          Cesium
+            .ClockRange
+            .CLAMPED;
+
+        viewer.clock.clockStep =
+          Cesium
+            .ClockStep
+            .SYSTEM_CLOCK_MULTIPLIER;
+
+        viewer.clock.multiplier =
+          1;
+
+        viewer.clock.shouldAnimate =
+          false;
+
+
+        reportClockTime(
+          playback.start
+        );
+
+
+        let lastReportAt =
+          0;
+
+
+        removeTickListener =
+          viewer
+            .clock
+            .onTick
+            .addEventListener(
+              clock => {
+                const now =
+                  performance.now();
+
+
+                if (
+                  now
+                  - lastReportAt
+                  >= 100
+                ) {
+                  lastReportAt =
+                    now;
+
+
+                  reportClockTime(
+                    Cesium
+                      .JulianDate
+                      .toIso8601(
+                        clock
+                          .currentTime,
+                        0,
+                      )
+                  );
+                }
+
+
+                if (
+                  Cesium
+                    .JulianDate
+                    .greaterThanOrEquals(
+                      clock.currentTime,
+                      clock.stopTime,
+                    )
+                  && clock
+                    .shouldAnimate
+                ) {
+                  clock.shouldAnimate =
+                    false;
+
+
+                  reportClockTime(
+                    playback.end
+                  );
+
+
+                  setIsPlaying(
+                    false
+                  );
+                }
+              }
+            );
+      }
+    );
+
+
+    return () => {
+      cancelled =
+        true;
+
+      removeTickListener?.();
+    };
+
+  }, [
+    playback,
+    ready,
+    reportClockTime,
+    setIsPlaying,
+  ]);
+
+
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !playback
+    ) {
+      return;
+    }
+
+
+    viewer.clock
+      .shouldAnimate =
+      isPlaying;
+
+  }, [
+    isPlaying,
+    playback,
+    ready,
+  ]);
+
+
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !playback
+    ) {
+      return;
+    }
+
+
+    viewer.clock.multiplier =
+      speed;
+
+  }, [
+    speed,
+    playback,
+    ready,
+  ]);
+
+
+  /*
+   * Dynamic selected-object trajectories.
+   *
+   * PathGraphics follows the same
+   * SampledPositionProperty used to
+   * animate each orbital object.
+   *
+   * No orbit is calculated here:
+   * all samples originate from the
+   * deterministic backend playback.
+   */
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !playback
+    ) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          cancelled
+          || viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        const palette = [
+          "#55d6ef",
+          "#f1c75b",
+          "#9b8cff",
+          "#63df9e",
+          "#ef8c55",
+          "#e977c6",
+        ];
+
+
+        /*
+         * Remove any legacy static
+         * trajectory entities that may
+         * still exist from the previous
+         * implementation.
+         */
+        for (
+          const entity
+          of [
+            ...viewer.entities.values
+          ]
+        ) {
+          if (
+            entity.id.startsWith(
+              "trajectory-"
+            )
+          ) {
+            viewer.entities.remove(
+              entity
+            );
+          }
+        }
+
+
+        for (
+          const entity
+          of viewer.entities.values
+        ) {
+          if (
+            !entity.id.startsWith(
+              "orbital-object-"
+            )
+          ) {
+            continue;
+          }
+
+
+          const objectId =
+            Number(
+              entity.id.replace(
+                "orbital-object-",
+                ""
+              )
+            );
+
+
+          const selected =
+            selectedIds.includes(
+              objectId
+            );
+
+
+          if (!selected) {
+            entity.path =
+              undefined;
+
+            continue;
+          }
+
+
+          const color =
+            Cesium.Color
+              .fromCssColorString(
+                palette[
+                  objectId
+                  % palette.length
+                ]
+              )
+              .withAlpha(
+                0.88
+              );
+
+
+          entity.path =
+            new Cesium.PathGraphics({
+              show:
+                layers
+                  .trajectories,
+
+              /*
+               * One hour behind the
+               * current simulation time.
+               */
+              trailTime:
+                3600,
+
+              /*
+               * One hour ahead.
+               */
+              leadTime:
+                3600,
+
+              width:
+                2.4,
+
+              resolution:
+                30,
+
+              material:
+                color,
+            });
+        }
+      }
+    );
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    layers.trajectories,
+    playback,
+    ready,
+    selectedIds,
+  ]);
+
+
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !seekRequest
+    ) {
+      return;
+    }
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        viewer.clock.currentTime =
+          Cesium
+            .JulianDate
+            .fromIso8601(
+              seekRequest.at
+            );
+
+
+        reportClockTime(
+          seekRequest.at
+        );
+      }
+    );
+
+  }, [
+    seekRequest,
+    ready,
+    reportClockTime,
+  ]);
+
+
+  /*
+   * Conjunction visualization.
+   *
+   * TCA, miss distance and relative
+   * velocity are authoritative backend
+   * results.
+   *
+   * Cesium performs visualization-only
+   * interpolation of backend-generated
+   * playback samples.
+   */
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !playback
+    ) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          cancelled
+          || viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        /*
+         * Remove previous conjunction
+         * visualization entities.
+         */
+        for (
+          const entity
+          of [
+            ...viewer.entities.values
+          ]
+        ) {
+          if (
+            entity.id.startsWith(
+              "conjunction-"
+            )
+          ) {
+            viewer.entities.remove(
+              entity
+            );
+          }
+        }
+
+
+        const playbackObjects =
+          new Map(
+            playback.objects.map(
+              object => [
+                object.object_id,
+                object,
+              ]
+            )
+          );
+
+
+        function buildPosition(
+          objectId: number
+        ) {
+          const object =
+            playbackObjects.get(
+              objectId
+            );
+
+          if (!object) {
+            return null;
+          }
+
+
+          const property =
+            new Cesium
+              .SampledPositionProperty();
+
+
+          for (
+            const point
+            of object.points
+          ) {
+            property.addSample(
+              Cesium
+                .JulianDate
+                .fromIso8601(
+                  point.at
+                ),
+
+              Cesium
+                .Cartesian3
+                .fromElements(
+                  point.x_m,
+                  point.y_m,
+                  point.z_m,
+                ),
+            );
+          }
+
+
+          property
+            .setInterpolationOptions({
+              interpolationAlgorithm:
+                Cesium
+                  .LinearApproximation,
+
+              interpolationDegree:
+                1,
+            });
+
+
+          return property;
+        }
+
+
+        const start =
+          new Date(
+            playback.start
+          ).getTime();
+
+        const end =
+          new Date(
+            playback.end
+          ).getTime();
+
+
+        for (
+          const event
+          of conjunctionEvents
+        ) {
+          const tcaMs =
+            new Date(
+              event.tca
+            ).getTime();
+
+
+          if (
+            !Number.isFinite(
+              tcaMs
+            )
+            || tcaMs < start
+            || tcaMs > end
+          ) {
+            continue;
+          }
+
+
+          const primary =
+            buildPosition(
+              event
+                .primary_object_id
+            );
+
+          const secondary =
+            buildPosition(
+              event
+                .secondary_object_id
+            );
+
+
+          if (
+            !primary
+            || !secondary
+          ) {
+            continue;
+          }
+
+
+          const tca =
+            Cesium
+              .JulianDate
+              .fromIso8601(
+                event.tca
+              );
+
+
+          const primaryAtTca =
+            primary.getValue(
+              tca
+            );
+
+          const secondaryAtTca =
+            secondary.getValue(
+              tca
+            );
+
+
+          if (
+            !primaryAtTca
+            || !secondaryAtTca
+          ) {
+            continue;
+          }
+
+
+          const midpoint =
+            Cesium
+              .Cartesian3
+              .midpoint(
+                primaryAtTca,
+                secondaryAtTca,
+                new Cesium
+                  .Cartesian3(),
+              );
+
+
+          /*
+           * Event visualization appears
+           * only around TCA so the globe
+           * remains operationally useful.
+           */
+          const visibleStart =
+            Cesium
+              .JulianDate
+              .addSeconds(
+                tca,
+                -300,
+                new Cesium
+                  .JulianDate(),
+              );
+
+          const visibleStop =
+            Cesium
+              .JulianDate
+              .addSeconds(
+                tca,
+                300,
+                new Cesium
+                  .JulianDate(),
+              );
+
+
+          const availability =
+            new Cesium
+              .TimeIntervalCollection([
+                new Cesium
+                  .TimeInterval({
+                    start:
+                      visibleStart,
+
+                    stop:
+                      visibleStop,
+                  }),
+              ]);
+
+
+          viewer.entities.add({
+            id:
+              `conjunction-link-${event.id}`,
+
+            availability,
+
+            show:
+              layers
+                .conjunctions,
+
+            polyline: {
+              positions: [
+                primaryAtTca,
+                secondaryAtTca,
+              ],
+
+              width:
+                2.5,
+
+              material:
+                Cesium.Color
+                  .ORANGERED
+                  .withAlpha(
+                    0.92
+                  ),
+            },
+          });
+
+
+          viewer.entities.add({
+            id:
+              `conjunction-marker-${event.id}`,
+
+            availability,
+
+            position:
+              midpoint,
+
+            show:
+              layers
+                .conjunctions,
+
+            point: {
+              pixelSize:
+                10,
+
+              color:
+                Cesium.Color
+                  .ORANGERED,
+
+              outlineColor:
+                Cesium.Color
+                  .WHITE,
+
+              outlineWidth:
+                1.5,
+            },
+
+            label: {
+              text:
+                `TCA\n${event.miss_distance_km.toFixed(3)} km`,
+
+              font:
+                "10px monospace",
+
+              fillColor:
+                Cesium.Color
+                  .WHITE,
+
+              outlineColor:
+                Cesium.Color
+                  .BLACK,
+
+              outlineWidth:
+                3,
+
+              style:
+                Cesium
+                  .LabelStyle
+                  .FILL_AND_OUTLINE,
+
+              pixelOffset:
+                new Cesium
+                  .Cartesian2(
+                    0,
+                    -24,
+                  ),
+
+              showBackground:
+                true,
+
+              backgroundColor:
+                Cesium.Color
+                  .BLACK
+                  .withAlpha(
+                    0.62
+                  ),
+            },
+          });
+        }
+      }
+    );
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    conjunctionEvents,
+    layers.conjunctions,
+    playback,
+    ready,
+  ]);
+
+
+  /*
+   * Operational conjunction focus.
+   *
+   * The camera is framed around the
+   * authoritative backend TCA positions
+   * of both objects.
+   */
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || !viewer
+      || viewer.isDestroyed()
+      || !activeConjunctionEventId
+    ) {
+      return;
+    }
+
+
+    const event =
+      conjunctionEvents.find(
+        candidate =>
+          candidate.id
+          === activeConjunctionEventId
+      );
+
+
+    if (!event) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          cancelled
+          || viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        const primary =
+          viewer.entities.getById(
+            `orbital-object-${event.primary_object_id}`
+          );
+
+        const secondary =
+          viewer.entities.getById(
+            `orbital-object-${event.secondary_object_id}`
+          );
+
+
+        if (
+          !primary?.position
+          || !secondary?.position
+        ) {
+          return;
+        }
+
+
+        const tca =
+          Cesium
+            .JulianDate
+            .fromIso8601(
+              event.tca
+            );
+
+
+        const primaryPosition =
+          primary.position.getValue(
+            tca
+          );
+
+        const secondaryPosition =
+          secondary.position.getValue(
+            tca
+          );
+
+
+        if (
+          !primaryPosition
+          || !secondaryPosition
+        ) {
+          return;
+        }
+
+
+        viewer.trackedEntity =
+          undefined;
+
+        cameraLockedRef.current =
+          false;
+
+        setCameraLocked(
+          false
+        );
+
+
+        const sphere =
+          Cesium
+            .BoundingSphere
+            .fromPoints([
+              primaryPosition,
+              secondaryPosition,
+            ]);
+
+
+        const range =
+          Math.max(
+            sphere.radius
+            * 25,
+            800_000,
+          );
+
+
+        viewer.camera
+          .flyToBoundingSphere(
+            sphere,
+            {
+              duration:
+                1.2,
+
+              offset:
+                new Cesium
+                  .HeadingPitchRange(
+                    0,
+                    -0.45,
+                    range,
+                  ),
+            },
+          );
+      }
+    );
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    activeConjunctionEventId,
+    conjunctionEvents,
     ready,
   ]);
 
