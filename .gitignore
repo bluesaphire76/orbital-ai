@@ -48,3 +48,6 @@ deploy/cloudflared/token
 # Runtime state
 runtime/
 volumes/
+
+# Generated Cesium runtime assets
+frontend/public/cesium/
