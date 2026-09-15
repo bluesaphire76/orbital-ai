@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Local-first orbital intelligence and conjunction assessment platform"
 readme = "README.md"
 requires-python = ">=3.12"
+
 dependencies = [
     "httpx",
     "numpy",
@@ -23,12 +24,23 @@ dev = [
     "pytest",
 ]
 
+platform = [
+    "alembic",
+    "fastapi==0.141.1",
+    "sqlalchemy==2.0.52",
+    "psycopg[binary]==3.3.5",
+    "prometheus-client==0.26.0",
+    "uvicorn[standard]==0.52.4",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = [
+    "backend*",
     "ingestion*",
     "orbital_engine*",
     "scripts*",
+    "workers*",
 ]
 
 [tool.pytest.ini_options]

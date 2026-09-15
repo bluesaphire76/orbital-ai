@@ -27,3 +27,40 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime configuration
+.env
+.env.local
+.env.production
+
+# Secrets
+.secrets/
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Cloudflare
+deploy/cloudflared/*.json
+deploy/cloudflared/token
+
+# Runtime state
+runtime/
+volumes/
+
+# Generated Cesium runtime assets
+frontend/public/cesium/
+
+# Frontend generated files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Generated Cesium runtime assets
+frontend/public/cesium/
+
+# Frontend caches
+frontend/.turbo/
+frontend/*.tsbuildinfo

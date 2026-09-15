@@ -13,6 +13,13 @@ Requires-Dist: sgp4
 Requires-Dist: skyfield
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
+Provides-Extra: platform
+Requires-Dist: alembic; extra == "platform"
+Requires-Dist: fastapi==0.141.1; extra == "platform"
+Requires-Dist: sqlalchemy==2.0.52; extra == "platform"
+Requires-Dist: psycopg[binary]==3.3.5; extra == "platform"
+Requires-Dist: prometheus-client==0.26.0; extra == "platform"
+Requires-Dist: uvicorn[standard]==0.52.4; extra == "platform"
 
 # OrbitalAI
 

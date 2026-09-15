@@ -8,3 +8,11 @@ skyfield
 
 [dev]
 pytest
+
+[platform]
+alembic
+fastapi==0.141.1
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.5
+prometheus-client==0.26.0
+uvicorn[standard]==0.52.4
