@@ -168,12 +168,22 @@ def main() -> None:
     )
 
     print(
+        "Refinement attempts: "
+        f"{result.refinement_attempts}"
+    )
+
+    print(
+        "Refinement failures: "
+        f"{result.refinement_failures}"
+    )
+
+    print(
         "Conjunctions: "
-        f"{len(result.screening.conjunctions)}"
+        f"{len(result.refined_conjunctions)}"
     )
 
     for conjunction in (
-        result.screening.conjunctions
+        result.refined_conjunctions
     ):
         primary = labels.get(
             conjunction

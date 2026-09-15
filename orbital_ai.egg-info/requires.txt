@@ -10,6 +10,7 @@ skyfield
 pytest
 
 [platform]
+alembic
 fastapi==0.141.1
 sqlalchemy==2.0.52
 psycopg[binary]==3.3.5

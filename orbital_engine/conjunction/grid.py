@@ -26,6 +26,7 @@ class GridScreeningResult:
     raw_candidates: int
     suppressed_shared_pairs: int
     unique_candidates: int
+    candidates: tuple[CandidatePair, ...]
     conjunctions: tuple[ClosestApproach, ...]
 
 
@@ -79,19 +80,13 @@ def screen_propagation_grid(
     candidate_distance_km: float,
     step_seconds: float,
     max_relative_speed_km_s: float = 16.0,
-    excluded_pairs: Collection[
-        PairId
-    ] | None = None,
+    excluded_pairs: Collection[PairId] | None = None,
 ) -> GridScreeningResult:
     screening_distance_km = (
         inflated_screening_distance_km(
-            candidate_distance_km=(
-                candidate_distance_km
-            ),
+            candidate_distance_km=candidate_distance_km,
             step_seconds=step_seconds,
-            max_relative_speed_km_s=(
-                max_relative_speed_km_s
-            ),
+            max_relative_speed_km_s=max_relative_speed_km_s,
         )
     )
 
@@ -122,19 +117,13 @@ def screen_propagation_grid(
         sample_count += 1
 
         if first_sample_time is None:
-            first_sample_time = (
-                sample_time
-            )
+            first_sample_time = sample_time
 
-        last_sample_time = (
-            sample_time
-        )
+        last_sample_time = sample_time
 
         candidates = find_candidate_pairs(
             states,
-            screening_distance_km=(
-                screening_distance_km
-            ),
+            screening_distance_km=screening_distance_km,
         )
 
         raw_candidate_count += len(
@@ -162,9 +151,16 @@ def screen_propagation_grid(
                 or candidate.screening_distance_km
                 < existing.screening_distance_km
             ):
-                best_candidates[
-                    pair_id
-                ] = candidate
+                best_candidates[pair_id] = (
+                    candidate
+                )
+
+    ordered_candidates = tuple(
+        best_candidates[pair_id]
+        for pair_id in sorted(
+            best_candidates
+        )
+    )
 
     conjunctions: list[
         ClosestApproach
@@ -174,12 +170,10 @@ def screen_propagation_grid(
         step_seconds / 2.0
     )
 
-    for candidate in best_candidates.values():
+    for candidate in ordered_candidates:
         closest = refine_closest_approach(
             candidate,
-            half_window_seconds=(
-                half_window_seconds
-            ),
+            half_window_seconds=half_window_seconds,
         )
 
         if (
@@ -217,15 +211,14 @@ def screen_propagation_grid(
 
     return GridScreeningResult(
         samples=sample_count,
-        raw_candidates=(
-            raw_candidate_count
-        ),
+        raw_candidates=raw_candidate_count,
         suppressed_shared_pairs=len(
             suppressed_pairs_seen
         ),
         unique_candidates=len(
-            best_candidates
+            ordered_candidates
         ),
+        candidates=ordered_candidates,
         conjunctions=tuple(
             conjunctions
         ),

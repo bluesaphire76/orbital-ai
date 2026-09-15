@@ -24,7 +24,11 @@ from orbital_engine.conjunction.grid import (
     screen_propagation_grid,
 )
 from orbital_engine.conjunction.models import (
+    ClosestApproach,
     StateVector,
+)
+from orbital_engine.conjunction.numerical_refinement import (
+    refine_closest_approach_numerical,
 )
 from orbital_engine.propagation import (
     propagate_utc,
@@ -58,8 +62,16 @@ class ConjunctionGridResult:
     raw_candidates: int
     unique_candidates: int
 
+    refinement_attempts: int
+    refinement_failures: int
+
     object_labels: tuple[
         ConjunctionObjectLabel,
+        ...
+    ]
+
+    refined_conjunctions: tuple[
+        ClosestApproach,
         ...
     ]
 
@@ -107,10 +119,7 @@ def _build_sample_times(
         )
     )
 
-    times: list[
-        datetime
-    ] = []
-
+    times: list[datetime] = []
     current = start_time
 
     while current <= end_time:
@@ -185,10 +194,8 @@ def run_conjunction_grid(
 
     settings = get_settings()
 
-    repository = (
-        OrbitalElementRepository(
-            session
-        )
+    repository = OrbitalElementRepository(
+        session
     )
 
     elements = repository.list_latest(
@@ -206,43 +213,35 @@ def run_conjunction_grid(
         for element in elements
     ]
 
-    object_labels = (
-        _load_object_labels(
-            session,
-            object_ids=object_ids,
-        )
+    object_labels = _load_object_labels(
+        session,
+        object_ids=object_ids,
     )
 
-    sample_times = (
-        _build_sample_times(
-            start_time=start_time,
-            horizon_seconds=(
-                horizon_seconds
-            ),
-            step_seconds=(
-                step_seconds
-            ),
-        )
+    sample_times = _build_sample_times(
+        start_time=start_time,
+        horizon_seconds=horizon_seconds,
+        step_seconds=step_seconds,
     )
 
-    satellites = []
+    satellites: dict[
+        int,
+        tuple[object, object],
+    ] = {}
 
     for element in elements:
         try:
-            satellite = (
-                satrec_from_omm(
-                    element.raw_omm
-                )
+            satellite = satrec_from_omm(
+                element.raw_omm
             )
-
         except Exception:
             continue
 
-        satellites.append(
-            (
-                element,
-                satellite,
-            )
+        satellites[
+            element.orbital_object_id
+        ] = (
+            element,
+            satellite,
         )
 
     propagation_attempts = 0
@@ -264,7 +263,7 @@ def run_conjunction_grid(
         for (
             element,
             satellite,
-        ) in satellites:
+        ) in satellites.values():
             quality = (
                 assess_ephemeris_quality(
                     epoch=element.epoch,
@@ -284,10 +283,7 @@ def run_conjunction_grid(
                 )
             )
 
-            if (
-                not quality
-                .propagation_allowed
-            ):
+            if not quality.propagation_allowed:
                 expired_skips += 1
                 continue
 
@@ -308,14 +304,11 @@ def run_conjunction_grid(
             states.append(
                 StateVector(
                     object_id=(
-                        element
-                        .orbital_object_id
+                        element.orbital_object_id
                     ),
                     when=sample_time,
                     position_km=position,
-                    velocity_km_s=(
-                        velocity
-                    ),
+                    velocity_km_s=velocity,
                 )
             )
 
@@ -326,21 +319,130 @@ def run_conjunction_grid(
             )
         )
 
-    screening = (
-        screen_propagation_grid(
-            snapshots,
-            candidate_distance_km=(
-                candidate_distance_km
+    screening = screen_propagation_grid(
+        snapshots,
+        candidate_distance_km=(
+            candidate_distance_km
+        ),
+        step_seconds=step_seconds,
+        max_relative_speed_km_s=(
+            max_relative_speed_km_s
+        ),
+        excluded_pairs=(
+            shared_solutions.pairs
+        ),
+    )
+
+    refined: list[
+        ClosestApproach
+    ] = []
+
+    refinement_attempts = 0
+    refinement_failures = 0
+
+    for candidate in screening.candidates:
+        primary_entry = satellites.get(
+            candidate.primary.object_id
+        )
+
+        secondary_entry = satellites.get(
+            candidate.secondary.object_id
+        )
+
+        if (
+            primary_entry is None
+            or secondary_entry is None
+        ):
+            refinement_failures += 1
+            continue
+
+        _, primary_satellite = primary_entry
+        _, secondary_satellite = (
+            secondary_entry
+        )
+
+        candidate_time = (
+            candidate.primary.when
+        )
+
+        search_start = max(
+            start_time,
+            candidate_time
+            - timedelta(
+                seconds=step_seconds,
             ),
-            step_seconds=(
-                step_seconds
+        )
+
+        search_end = min(
+            sample_times[-1],
+            candidate_time
+            + timedelta(
+                seconds=step_seconds,
             ),
-            max_relative_speed_km_s=(
-                max_relative_speed_km_s
-            ),
-            excluded_pairs=(
-                shared_solutions.pairs
-            ),
+        )
+
+        if search_end <= search_start:
+            refinement_failures += 1
+            continue
+
+        def primary_state_at(
+            when: datetime,
+            satellite=primary_satellite,
+        ):
+            return propagate_utc(
+                satellite,
+                when,
+            )
+
+        def secondary_state_at(
+            when: datetime,
+            satellite=secondary_satellite,
+        ):
+            return propagate_utc(
+                satellite,
+                when,
+            )
+
+        refinement_attempts += 1
+
+        try:
+            closest = (
+                refine_closest_approach_numerical(
+                    candidate,
+                    primary_state_at=(
+                        primary_state_at
+                    ),
+                    secondary_state_at=(
+                        secondary_state_at
+                    ),
+                    search_start=(
+                        search_start
+                    ),
+                    search_end=(
+                        search_end
+                    ),
+                    tolerance_seconds=0.01,
+                )
+            )
+
+        except Exception:
+            refinement_failures += 1
+            continue
+
+        if (
+            closest.miss_distance_km
+            <= candidate_distance_km
+        ):
+            refined.append(
+                closest
+            )
+
+    refined.sort(
+        key=lambda result: (
+            result.tca,
+            result.miss_distance_km,
+            result.primary_object_id,
+            result.secondary_object_id,
         )
     )
 
@@ -348,9 +450,7 @@ def run_conjunction_grid(
         start_time=start_time,
         end_time=sample_times[-1],
         objects=len(elements),
-        samples=len(
-            sample_times
-        ),
+        samples=len(sample_times),
         propagation_attempts=(
             propagation_attempts
         ),
@@ -367,18 +467,25 @@ def run_conjunction_grid(
             shared_solutions.objects
         ),
         suppressed_shared_pairs=(
-            screening
-            .suppressed_shared_pairs
+            screening.suppressed_shared_pairs
         ),
         raw_candidates=(
             screening.raw_candidates
         ),
         unique_candidates=(
-            screening
-            .unique_candidates
+            screening.unique_candidates
+        ),
+        refinement_attempts=(
+            refinement_attempts
+        ),
+        refinement_failures=(
+            refinement_failures
         ),
         object_labels=(
             object_labels
+        ),
+        refined_conjunctions=tuple(
+            refined
         ),
         screening=screening,
     )
