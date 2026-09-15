@@ -51,3 +51,16 @@ volumes/
 
 # Generated Cesium runtime assets
 frontend/public/cesium/
+
+# Frontend generated files
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Generated Cesium runtime assets
+frontend/public/cesium/
+
+# Frontend caches
+frontend/.turbo/
+frontend/*.tsbuildinfo

@@ -8,7 +8,9 @@ from backend.app.db.session import (
 )
 from backend.app.services.conjunction_grid import (
     ConjunctionObjectLabel,
-    run_conjunction_grid,
+)
+from backend.app.services.conjunction_runs import (
+    execute_conjunction_screening,
 )
 
 
@@ -16,7 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run deterministic OrbitalAI "
-            "conjunction grid screening."
+            "conjunction screening and persist results."
         )
     )
 
@@ -24,21 +26,63 @@ def parse_args() -> argparse.Namespace:
         "--hours",
         type=float,
         default=6.0,
+        help="Future screening horizon in hours",
     )
 
     parser.add_argument(
         "--step-seconds",
         type=int,
         default=60,
+        help="Propagation grid interval in seconds",
     )
 
     parser.add_argument(
         "--candidate-distance-km",
         type=float,
         default=10.0,
+        help=(
+            "Maximum refined miss distance "
+            "to persist and report"
+        ),
+    )
+
+    parser.add_argument(
+        "--max-relative-speed-km-s",
+        type=float,
+        default=16.0,
+        help=(
+            "Maximum relative speed used to inflate "
+            "the coarse screening distance"
+        ),
     )
 
     return parser.parse_args()
+
+
+def _validate_args(
+    args: argparse.Namespace,
+) -> None:
+    if args.hours <= 0:
+        raise ValueError(
+            "--hours must be greater than zero"
+        )
+
+    if args.step_seconds <= 0:
+        raise ValueError(
+            "--step-seconds must be greater than zero"
+        )
+
+    if args.candidate_distance_km <= 0:
+        raise ValueError(
+            "--candidate-distance-km "
+            "must be greater than zero"
+        )
+
+    if args.max_relative_speed_km_s <= 0:
+        raise ValueError(
+            "--max-relative-speed-km-s "
+            "must be greater than zero"
+        )
 
 
 def _format_object(
@@ -47,7 +91,7 @@ def _format_object(
 ) -> str:
     if label is None:
         return (
-            f"Unknown object "
+            "Unknown object "
             f"(internal id {object_id})"
         )
 
@@ -60,24 +104,9 @@ def _format_object(
 def main() -> None:
     args = parse_args()
 
-    if args.hours <= 0:
-        raise ValueError(
-            "--hours must be greater than zero"
-        )
-
-    if args.step_seconds <= 0:
-        raise ValueError(
-            "--step-seconds must be greater than zero"
-        )
-
-    if (
-        args.candidate_distance_km
-        <= 0
-    ):
-        raise ValueError(
-            "--candidate-distance-km "
-            "must be greater than zero"
-        )
+    _validate_args(
+        args
+    )
 
     start_time = datetime.now(
         timezone.utc
@@ -92,25 +121,40 @@ def main() -> None:
     )
 
     with session_factory() as session:
-        result = run_conjunction_grid(
-            session,
-            start_time=start_time,
-            horizon_seconds=(
-                horizon_seconds
-            ),
-            step_seconds=(
-                args.step_seconds
-            ),
-            candidate_distance_km=(
-                args
-                .candidate_distance_km
-            ),
+        execution = (
+            execute_conjunction_screening(
+                session,
+                start_time=start_time,
+                horizon_seconds=(
+                    horizon_seconds
+                ),
+                step_seconds=(
+                    args.step_seconds
+                ),
+                candidate_distance_km=(
+                    args.candidate_distance_km
+                ),
+                max_relative_speed_km_s=(
+                    args.max_relative_speed_km_s
+                ),
+            )
         )
+
+    result = execution.result
 
     labels = {
         label.orbital_object_id: label
         for label in result.object_labels
     }
+
+    print(
+        f"Run ID: {execution.run_id}"
+    )
+
+    print(
+        "Duration: "
+        f"{execution.duration_ms:.3f} ms"
+    )
 
     print(
         "Window: "
@@ -186,22 +230,20 @@ def main() -> None:
         result.refined_conjunctions
     ):
         primary = labels.get(
-            conjunction
-            .primary_object_id
+            conjunction.primary_object_id
         )
 
         secondary = labels.get(
-            conjunction
-            .secondary_object_id
+            conjunction.secondary_object_id
         )
 
         print()
+
         print(
             "Primary: "
             + _format_object(
                 primary,
-                conjunction
-                .primary_object_id,
+                conjunction.primary_object_id,
             )
         )
 
@@ -209,8 +251,7 @@ def main() -> None:
             "Secondary: "
             + _format_object(
                 secondary,
-                conjunction
-                .secondary_object_id,
+                conjunction.secondary_object_id,
             )
         )
 
@@ -227,6 +268,11 @@ def main() -> None:
         print(
             "Relative velocity: "
             f"{conjunction.relative_velocity_km_s:.6f} km/s"
+        )
+
+        print(
+            "Method: "
+            f"{conjunction.method}"
         )
 
 

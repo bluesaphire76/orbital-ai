@@ -1,7 +1,13 @@
 from __future__ import annotations
 
-from prometheus_client import Gauge, REGISTRY
+from prometheus_client import (
+    Gauge,
+    REGISTRY,
+)
 
+from backend.app.observability.conjunction_metrics import (
+    ConjunctionMetricsCollector,
+)
 from backend.app.observability.propagation_metrics import (
     PropagationMetricsCollector,
 )
@@ -23,11 +29,15 @@ def initialize_metrics() -> None:
         return
 
     PLATFORM_INFO.labels(
-        service="api",
+        service="api"
     ).set(1)
 
     REGISTRY.register(
         PropagationMetricsCollector()
+    )
+
+    REGISTRY.register(
+        ConjunctionMetricsCollector()
     )
 
     _initialized = True

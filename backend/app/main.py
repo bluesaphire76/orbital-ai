@@ -1,26 +1,52 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from prometheus_client import make_asgi_app
+from prometheus_client import (
+    make_asgi_app,
+)
 
-from backend.app.api.routes.health import router as health_router
-from backend.app.core.metrics import initialize_metrics
+from backend.app.api.routes.conjunctions import (
+    router as conjunction_router,
+)
+from backend.app.api.routes.health import (
+    router as health_router,
+)
+from backend.app.api.routes.visualization import (
+    router as visualization_router,
+)
+from backend.app.core.metrics import (
+    initialize_metrics,
+)
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(
+    initialize_metrics()
+
+    app = FastAPI(
         title="OrbitalAI API",
         version="0.1.0",
         docs_url="/docs",
         redoc_url=None,
     )
 
-    application.include_router(health_router)
-    application.mount("/metrics", make_asgi_app())
+    app.include_router(
+        health_router
+    )
 
-    initialize_metrics()
+    app.include_router(
+        conjunction_router
+    )
 
-    return application
+    app.include_router(
+        visualization_router
+    )
+
+    app.mount(
+        "/metrics",
+        make_asgi_app(),
+    )
+
+    return app
 
 
 app = create_app()
