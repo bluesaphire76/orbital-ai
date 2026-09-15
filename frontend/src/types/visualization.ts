@@ -49,3 +49,31 @@ export interface ObjectTrajectory {
 
   points: TrajectoryPoint[];
 }
+
+
+export interface PlaybackObject {
+  object_id: number;
+  norad_cat_id: number;
+  object_name: string;
+  object_type: string | null;
+
+  epoch: string;
+  ephemeris_status: string;
+
+  points: TrajectoryPoint[];
+}
+
+
+export interface VisualizationPlayback {
+  start: string;
+  end: string;
+  step_seconds: number;
+  frame: string;
+
+  objects: PlaybackObject[];
+
+  total_elements: number;
+  rendered_objects: number;
+  expired_skips: number;
+  propagation_failures: number;
+}

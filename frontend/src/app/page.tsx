@@ -11,14 +11,38 @@ import {
 } from "@/components/globe/orbital-view-context";
 
 import {
+  OrbitalPlaybackProvider,
+} from "@/components/playback/orbital-playback-context";
+
+import {
+  OrbitalPlaybackControls,
+} from "@/components/playback/orbital-playback-controls";
+
+import {
+  getConjunctionEvents,
   getLatestConjunctionRun,
   getVisualizationSnapshot,
 } from "@/lib/api";
+
+import {
+  ConjunctionEventsPanel,
+} from "@/components/conjunction/conjunction-events-panel";
+
+import {
+  ConjunctionFocusProvider,
+} from "@/components/conjunction/conjunction-focus-context";
+
+import type {
+  ConjunctionEvent,
+} from "@/types/conjunction";
 
 
 export default async function Home() {
   let run = null;
   let snapshot = null;
+
+  let events:
+    ConjunctionEvent[] = [];
 
 
   try {
@@ -35,8 +59,29 @@ export default async function Home() {
   }
 
 
+  if (
+    run
+    && run.event_count > 0
+  ) {
+    try {
+      events =
+        await getConjunctionEvents(
+          run.id
+        );
+    } catch {
+      events = [];
+    }
+  }
+
+
   return (
     <OrbitalViewProvider>
+      <OrbitalPlaybackProvider
+        initialSnapshotAt={
+          snapshot?.at ?? null
+        }
+      >
+        <ConjunctionFocusProvider>
 
       <main className="operationsConsole">
 
@@ -271,6 +316,13 @@ export default async function Home() {
           </div>
 
 
+          <ConjunctionEventsPanel
+            events={
+              events
+            }
+          />
+
+
           <OrbitalViewControls />
 
         </aside>
@@ -281,6 +333,9 @@ export default async function Home() {
           <OrbitalGlobe
             snapshot={
               snapshot
+            }
+            conjunctionEvents={
+              events
             }
           />
 
@@ -299,55 +354,20 @@ export default async function Home() {
 
         <footer className="operationsTimeline">
 
-          <button
-            className="playButton"
-            type="button"
-          >
-            ▶
-          </button>
-
-
-          <div className="timeReadout">
-            <span>
-              SNAPSHOT UTC
-            </span>
-
-            <strong>
-              {
-                snapshot
-                  ? new Date(
-                      snapshot.at
-                    )
-                    .toLocaleString()
-                  : "No data"
-              }
-            </strong>
-          </div>
-
-
-          <div className="timelineTrack">
-            <div className="timelineProgress" />
-          </div>
-
-
-          <div className="timeReadout right">
-            <span>
-              REFERENCE FRAME
-            </span>
-
-            <strong>
-              {
-                snapshot
-                  ?.frame
-                ?? "—"
-              }
-            </strong>
-          </div>
+          <OrbitalPlaybackControls
+            fallbackFrame={
+              snapshot
+                ?.frame
+              ?? "—"
+            }
+          />
 
         </footer>
 
       </main>
 
+        </ConjunctionFocusProvider>
+      </OrbitalPlaybackProvider>
     </OrbitalViewProvider>
   );
 }

@@ -18,6 +18,7 @@ from backend.app.api.dependencies import (
 )
 from backend.app.schemas.visualization import (
     ObjectTrajectory,
+    VisualizationPlayback,
     VisualizationSnapshot,
 )
 from backend.app.services.visualization import (
@@ -25,6 +26,9 @@ from backend.app.services.visualization import (
     VisualizationObjectNotFound,
     build_object_trajectory,
     build_visualization_snapshot,
+)
+from backend.app.services.visualization_playback import (
+    build_visualization_playback,
 )
 
 
@@ -36,9 +40,7 @@ router = APIRouter(
 
 @router.get(
     "/snapshot",
-    response_model=(
-        VisualizationSnapshot
-    ),
+    response_model=VisualizationSnapshot,
 )
 def get_snapshot(
     at: datetime | None = Query(
@@ -57,11 +59,9 @@ def get_snapshot(
     )
 
     try:
-        return (
-            build_visualization_snapshot(
-                session,
-                when=target_time,
-            )
+        return build_visualization_snapshot(
+            session,
+            when=target_time,
         )
 
     except ValueError as exc:
@@ -94,9 +94,7 @@ def get_trajectory(
             object_id=object_id,
             start=start,
             end=end,
-            step_seconds=(
-                step_seconds
-            ),
+            step_seconds=step_seconds,
         )
 
     except VisualizationObjectNotFound as exc:
@@ -110,6 +108,37 @@ def get_trajectory(
             status_code=422,
             detail=str(exc),
         ) from exc
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/playback",
+    response_model=VisualizationPlayback,
+)
+def get_playback(
+    start: datetime,
+    end: datetime,
+    step_seconds: int = Query(
+        default=60,
+        ge=10,
+        le=3600,
+    ),
+    session: Session = Depends(
+        get_db_session
+    ),
+) -> VisualizationPlayback:
+    try:
+        return build_visualization_playback(
+            session,
+            start=start,
+            end=end,
+            step_seconds=step_seconds,
+        )
 
     except ValueError as exc:
         raise HTTPException(
