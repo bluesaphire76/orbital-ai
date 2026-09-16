@@ -22,3 +22,13 @@ scrape_configs:
     static_configs:
       - targets:
           - alertmanager:9093
+
+  - job_name: orbitalai-loki
+    static_configs:
+      - targets:
+          - loki:3100
+
+  - job_name: orbitalai-alloy
+    static_configs:
+      - targets:
+          - alloy:12345
