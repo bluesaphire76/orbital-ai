@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from prometheus_client import (
     make_asgi_app,
+    REGISTRY,
 )
 
 from backend.app.api.routes.conjunctions import (
@@ -19,8 +20,10 @@ from backend.app.core.metrics import (
 )
 
 
-def create_app() -> FastAPI:
-    initialize_metrics()
+def create_app(*, metrics_registry=None) -> FastAPI:
+    if metrics_registry is None:
+        initialize_metrics()
+        metrics_registry = REGISTRY
 
     app = FastAPI(
         title="OrbitalAI API",
@@ -43,7 +46,7 @@ def create_app() -> FastAPI:
 
     app.mount(
         "/metrics",
-        make_asgi_app(),
+        make_asgi_app(registry=metrics_registry),
     )
 
     return app

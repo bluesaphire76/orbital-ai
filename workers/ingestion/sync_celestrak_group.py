@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 import argparse
 from pathlib import Path
 
@@ -48,6 +50,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@observe_ingestion("celestrak")
 def main() -> None:
     args = parse_args()
 

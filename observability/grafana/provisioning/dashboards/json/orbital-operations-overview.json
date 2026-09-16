@@ -1,0 +1,1352 @@
+{
+  "uid": "orbitalai-operations",
+  "title": "OrbitalAI - Orbital Operations Overview",
+  "description": "Operational metrics for catalog coverage, deterministic conjunction screening and ingestion. No covariance or collision probability. Cached snapshots refresh every 60 seconds; unavailable collectors retain the last successful values.",
+  "tags": [
+    "orbitalai",
+    "operations"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "editable": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Platform and worker status",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "1 = healthy / successful, 0 = failed. Worker value is the last completed execution, not worker liveness. Database check is the existing /ready probe. Metrics refresh is 1 only when every cached collector's latest refresh succeeded.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"orbitalai-api\"}",
+          "legendFormat": "API scrape",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "orbitalai_database_ready",
+          "legendFormat": "PostgreSQL",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "orbitalai_conjunction_last_execution_success{source=\"canonical\"}",
+          "legendFormat": "Worker last outcome",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "min({__name__=~\"orbitalai_(catalog|conjunction|operations|propagation)_metrics_available\"})",
+          "legendFormat": "Metrics refresh",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Eligible objects",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "Current Earth-orbit canonical eligibility at the last catalog refresh; independent of a historical screening window.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_screening_eligible_objects",
+          "legendFormat": "Objects",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Last screening duration",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "Service time; excludes database persistence.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_duration_seconds",
+          "legendFormat": "Screening",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Conjunction events",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "Threshold-connected encounter events from the last completed screening. No probability of collision is calculated.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_events",
+          "legendFormat": "Events",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Propagation failures",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_propagation_failures",
+          "legendFormat": "Failed grid states",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Chunk count",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "description": "Sequential bounded-memory chunks. Their width is available as orbitalai_conjunction_last_run_chunk_seconds.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_chunk_count",
+          "legendFormat": "Chunks",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 7,
+      "title": "Catalog coverage",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 7
+      },
+      "description": "Current-element flag does not imply fresh ephemerides. Canonical coverage counts objects with any latest canonical element across the full catalog.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_total_objects",
+          "legendFormat": "Catalog objects",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "orbitalai_earth_orbit_objects",
+          "legendFormat": "Earth-orbit objects",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "orbitalai_objects_with_current_elements",
+          "legendFormat": "Current-element flag",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "orbitalai_canonical_elements_total",
+          "legendFormat": "Canonical coverage",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Earth-orbit ephemeris age",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7
+      },
+      "description": "Canonical Earth-orbit elements only. Future epochs are fresh, matching existing eligibility semantics. Refresh is at most once per 60 seconds.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_ephemeris_objects",
+          "legendFormat": "{{status}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Conjunction pipeline reduction",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7
+      },
+      "description": "Chunk-unique counts are summed across chunks; they are not globally unique pairs. Raw counts include the shared overlap sample.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_raw_candidates",
+          "legendFormat": "Raw detections",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "orbitalai_conjunction_last_run_unique_candidates",
+          "legendFormat": "Chunk-unique evaluations",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "orbitalai_conjunction_last_run_refinement_attempts",
+          "legendFormat": "Refinements",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "D",
+          "expr": "orbitalai_conjunction_last_run_events",
+          "legendFormat": "Final encounters",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Duplicate events suppressed",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 4,
+        "h": 7
+      },
+      "description": "Includes ordinary overlap solutions and continuous threshold episodes.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_duplicate_events_suppressed",
+          "legendFormat": "Merged events",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 11,
+      "title": "Largest chunk workload",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 11,
+        "w": 8,
+        "h": 7
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_max_chunk_raw_candidates",
+          "legendFormat": "Raw detections",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "orbitalai_conjunction_last_run_max_chunk_unique_candidates",
+          "legendFormat": "Retained candidates",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "orbitalai_conjunction_last_run_max_chunk_refinement_attempts",
+          "legendFormat": "Refinements",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Pipeline ratios",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 8,
+        "h": 7
+      },
+      "description": "Ratios are calculated in PromQL from the last completed run.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_propagation_failures / clamp_min(orbitalai_conjunction_last_run_propagation_attempts, 1)",
+          "legendFormat": "Propagation failures / attempts",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "orbitalai_conjunction_last_run_refinement_attempts / clamp_min(orbitalai_conjunction_last_run_unique_candidates, 1)",
+          "legendFormat": "Refinements / chunk-unique",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "orbitalai_conjunction_last_run_events / clamp_min(orbitalai_conjunction_last_run_refinement_attempts, 1)",
+          "legendFormat": "Events / refinements",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Screening performance",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 18,
+        "w": 8,
+        "h": 7
+      },
+      "description": "Histogram includes only runs observed since Step 6A was enabled. No historical backfill. Sparse jobs can leave the rate-based p95 empty.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_duration_seconds",
+          "legendFormat": "Latest completed screening",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(orbitalai_conjunction_screening_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p95 observed successful runs",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Execution counts in selected range",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 18,
+        "w": 8,
+        "h": 7
+      },
+      "description": "Prometheus increase() is an estimate from scraped counters; sparse jobs need samples on both sides.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(orbitalai_conjunction_runs_total[$__range])) - sum(increase(orbitalai_conjunction_failures_total[$__range]))",
+          "legendFormat": "Successful",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(orbitalai_conjunction_failures_total[$__range]))",
+          "legendFormat": "Failed",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 15,
+      "title": "Ingestion — time since successful sync",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 8,
+        "h": 8
+      },
+      "description": "No data means no successful sync observed since instrumentation was enabled. Historical success times are not invented.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - (orbitalai_ingestion_last_success_timestamp_seconds > 0)",
+          "legendFormat": "{{provider}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 16,
+      "title": "Ingestion — latest records and execution",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 25,
+        "w": 16,
+        "h": 8
+      },
+      "description": "Records are from the last successful sync. Duration/outcome refer to the latest completed attempt. Imported means new SATCAT objects or new GP elements. Failure totals start when instrumentation is enabled.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider) (orbitalai_ingestion_records{result=\"received\"})",
+          "legendFormat": "Received",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (provider) (orbitalai_ingestion_records{result=\"matched\"})",
+          "legendFormat": "Matched",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "sum by (provider) (orbitalai_ingestion_records{result=\"imported\"})",
+          "legendFormat": "Imported",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "sum by (provider) (orbitalai_ingestion_records{result=\"unmatched\"})",
+          "legendFormat": "Unmatched",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "expr": "sum by (provider) (orbitalai_ingestion_last_execution_duration_seconds)",
+          "legendFormat": "Duration",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "F",
+          "expr": "sum by (provider) (orbitalai_ingestion_failures_total)",
+          "legendFormat": "Failures",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "G",
+          "expr": "sum by (provider) (orbitalai_ingestion_last_execution_success)",
+          "legendFormat": "Outcome",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Duration"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "provider",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "Time 7": true
+            },
+            "renameByName": {
+              "provider": "Provider",
+              "Value #A": "Received",
+              "Value #B": "Matched",
+              "Value #C": "Imported",
+              "Value #D": "Unmatched",
+              "Value #E": "Duration",
+              "Value #F": "Failures",
+              "Value #G": "Outcome"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": []
+}

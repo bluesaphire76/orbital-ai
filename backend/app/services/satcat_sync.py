@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 from dataclasses import dataclass
 from datetime import (
     date,
@@ -287,6 +289,7 @@ def _chunks(
         ]
 
 
+@observe_ingestion("satcat")
 def sync_satcat_records(
     session: Session,
     records: Iterable[

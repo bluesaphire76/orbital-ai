@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -28,6 +30,7 @@ class CelesTrakSyncResult:
     elements_existing: int
 
 
+@observe_ingestion("celestrak")
 def sync_celestrak_records(
     session: Session,
     records: Iterable[dict[str, Any]],

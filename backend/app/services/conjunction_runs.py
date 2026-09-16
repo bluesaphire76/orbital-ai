@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_screening
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import perf_counter
@@ -26,6 +28,7 @@ class ConjunctionExecutionResult:
     result: ConjunctionGridResult
 
 
+@observe_screening
 def execute_conjunction_screening(
     session: Session,
     *,
