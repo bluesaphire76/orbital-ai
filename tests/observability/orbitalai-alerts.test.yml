@@ -1,0 +1,508 @@
+# Assert firing ALERTS samples and labels, independently of annotation wording.
+rule_files:
+- ../../observability/prometheus/rules/orbitalai-alerts.yml
+evaluation_interval: 1m
+tests:
+- name: healthy platform and recent provider syncs
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x30
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x30
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x30
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x30
+  - series: orbitalai_database_ready{instance="api:8000",job="orbitalai-api"}
+    values: 1x30
+  - series: orbitalai_database_last_check_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 0+60x30
+  - series: orbitalai_conjunction_last_run_propagation_failures{instance="api:8000",job="orbitalai-api"}
+    values: '0x30'
+  - series: orbitalai_conjunction_last_run_refinement_failures{instance="api:8000",job="orbitalai-api"}
+    values: '0x30'
+  - series: orbitalai_screening_eligible_objects{instance="api:8000",job="orbitalai-api"}
+    values: 90x30
+  - series: orbitalai_earth_orbit_objects{instance="api:8000",job="orbitalai-api"}
+    values: 100x30
+  - series: orbitalai_conjunction_failures_total{instance="api:8000",job="orbitalai-api",source="canonical"}
+    values: '0x30'
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: '0x30'
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: '0x30'
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="satcat"}
+    values: '0x30'
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: 60x30
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: 60x30
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="satcat"}
+    values: 60x30
+  promql_expr_test:
+  - expr: ALERTS{alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: API hold interval and recovery
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 0x2 1x2
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing"}
+    eval_time: 1m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing"}
+    eval_time: 2m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing",component="api",instance="api:8000",job="orbitalai-api",severity="critical"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+- name: PostgreSQL hold interval and recovery
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_database_ready{instance="api:8000",job="orbitalai-api"}
+    values: 0x2 1x3
+  - series: orbitalai_database_last_check_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 0+60x6
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing"}
+    eval_time: 1m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing"}
+    eval_time: 2m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing",component="postgres",instance="api:8000",job="orbitalai-api",severity="critical"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+- name: old PostgreSQL probe does not report a current outage
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x10
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x10
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x10
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x10
+  - series: orbitalai_database_ready{instance="api:8000",job="orbitalai-api"}
+    values: '0x10'
+  - series: orbitalai_database_last_check_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: '0x10'
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing"}
+    eval_time: 5m
+    exp_samples: []
+- name: API outage suppresses duplicate PostgreSQL alert
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: '0x6'
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x6
+  - series: orbitalai_database_ready{instance="api:8000",job="orbitalai-api"}
+    values: '0x6'
+  - series: orbitalai_database_last_check_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 0+60x6
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIPostgresNotReady",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing"}
+    eval_time: 3m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIApiDown",alertstate="firing",component="api",instance="api:8000",job="orbitalai-api",severity="critical"}
+      value: 1
+- name: space-track exact threshold, five-minute hold and stale condition
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x130
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x130
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x130
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x130
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: 60x130
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAISpaceTrackIngestionStale",alertstate="firing"}
+    eval_time: 120m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISpaceTrackIngestionStale",alertstate="firing"}
+    eval_time: 121m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISpaceTrackIngestionStale",alertstate="firing"}
+    eval_time: 126m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISpaceTrackIngestionStale",alertstate="firing"}
+    eval_time: 127m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAISpaceTrackIngestionStale",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="space-track",severity="warning"}
+      value: 1
+- name: celestrak exact threshold, five-minute hold and stale condition
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x250
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x250
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x250
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x250
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: 60x250
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAICelesTrakIngestionStale",alertstate="firing"}
+    eval_time: 240m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAICelesTrakIngestionStale",alertstate="firing"}
+    eval_time: 241m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAICelesTrakIngestionStale",alertstate="firing"}
+    eval_time: 246m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAICelesTrakIngestionStale",alertstate="firing"}
+    eval_time: 247m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAICelesTrakIngestionStale",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="celestrak",severity="warning"}
+      value: 1
+- name: satcat exact threshold, five-minute hold and stale condition
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x1450
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1450
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1450
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1450
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="satcat"}
+    values: 60x1450
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAISatcatIngestionStale",alertstate="firing"}
+    eval_time: 1440m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISatcatIngestionStale",alertstate="firing"}
+    eval_time: 1441m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISatcatIngestionStale",alertstate="firing"}
+    eval_time: 1446m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAISatcatIngestionStale",alertstate="firing"}
+    eval_time: 1447m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAISatcatIngestionStale",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="satcat",severity="warning"}
+      value: 1
+- name: never-observed and absent provider timestamps stay quiet
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x1600
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1600
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1600
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x1600
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: '0x1600'
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: '0x1600'
+  promql_expr_test:
+  - expr: ALERTS{alertstate="firing"}
+    eval_time: 1500m
+    exp_samples: []
+- name: space-track failure increase and eventual expiry
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: 0x2 1x22
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 2m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 4m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="space-track",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: celestrak failure increase and eventual expiry
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: 0x2 1x22
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 2m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 4m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="celestrak",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: satcat failure increase and eventual expiry
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="satcat"}
+    values: 0x2 1x22
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 2m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 4m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing",component="ingestion",instance="api:8000",job="orbitalai-api",provider="satcat",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIIngestionFailure",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: screening failure increase and eventual expiry
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_failures_total{instance="api:8000",job="orbitalai-api",source="canonical"}
+    values: 0x2 1x22
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIConjunctionScreeningFailure",alertstate="firing"}
+    eval_time: 3m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIConjunctionScreeningFailure",alertstate="firing"}
+    eval_time: 4m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIConjunctionScreeningFailure",alertstate="firing",component="conjunction",instance="api:8000",job="orbitalai-api",severity="critical",source="canonical"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIConjunctionScreeningFailure",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: counter resets do not create new failures
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_failures_total{instance="api:8000",job="orbitalai-api",source="canonical"}
+    values: 5x2 0x22
+  - series: orbitalai_ingestion_failures_total{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: 5x2 0x22
+  promql_expr_test:
+  - expr: ALERTS{alertstate="firing"}
+    eval_time: 4m
+    exp_samples: []
+- name: propagation failures only from a recent completed run
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_last_run_propagation_failures{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_last_run_completed_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 0x4 300x20
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing"}
+    eval_time: 4m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing"}
+    eval_time: 6m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing",component="conjunction",instance="api:8000",job="orbitalai-api",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing"}
+    eval_time: 19m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing",component="conjunction",instance="api:8000",job="orbitalai-api",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIPropagationFailures",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: refinement failures only from a recent completed run
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_last_run_refinement_failures{instance="api:8000",job="orbitalai-api"}
+    values: 1x25
+  - series: orbitalai_conjunction_last_run_completed_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 0x4 300x20
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing"}
+    eval_time: 4m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing"}
+    eval_time: 6m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing",component="conjunction",instance="api:8000",job="orbitalai-api",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing"}
+    eval_time: 19m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing",component="conjunction",instance="api:8000",job="orbitalai-api",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIRefinementFailures",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
+- name: unavailable collectors suppress their retained snapshots
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x1500
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: '0x1500'
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: '0x1500'
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: '0x1500'
+  - series: orbitalai_screening_eligible_objects{instance="api:8000",job="orbitalai-api"}
+    values: 10x1500
+  - series: orbitalai_earth_orbit_objects{instance="api:8000",job="orbitalai-api"}
+    values: 100x1500
+  - series: orbitalai_conjunction_last_run_propagation_failures{instance="api:8000",job="orbitalai-api"}
+    values: 1x1500
+  - series: orbitalai_conjunction_last_run_refinement_failures{instance="api:8000",job="orbitalai-api"}
+    values: 1x1500
+  - series: orbitalai_conjunction_last_run_completed_timestamp_seconds{instance="api:8000",job="orbitalai-api"}
+    values: 60x1500
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="space-track"}
+    values: 60x1500
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="celestrak"}
+    values: 60x1500
+  - series: orbitalai_ingestion_last_success_timestamp_seconds{instance="api:8000",job="orbitalai-api",provider="satcat"}
+    values: 60x1500
+  promql_expr_test:
+  - expr: ALERTS{alertstate="firing"}
+    eval_time: 6m
+    exp_samples: []
+  - expr: ALERTS{alertstate="firing"}
+    eval_time: 1490m
+    exp_samples: []
+- name: coverage warning holds for 15 minutes and ignores an empty catalog
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_screening_eligible_objects{instance="api:8000",job="orbitalai-api"}
+    values: 74x20
+  - series: orbitalai_earth_orbit_objects{instance="api:8000",job="orbitalai-api"}
+    values: 100x15 0x4
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIEphemerisCoverageDegraded",alertstate="firing"}
+    eval_time: 14m
+    exp_samples: []
+  - expr: ALERTS{alertname="OrbitalAIEphemerisCoverageDegraded",alertstate="firing"}
+    eval_time: 15m
+    exp_samples:
+    - labels: ALERTS{alertname="OrbitalAIEphemerisCoverageDegraded",alertstate="firing",component="ephemeris",instance="api:8000",job="orbitalai-api",severity="warning"}
+      value: 1
+  - expr: ALERTS{alertname="OrbitalAIEphemerisCoverageDegraded",alertstate="firing"}
+    eval_time: 16m
+    exp_samples: []
+- name: exact 75-percent coverage does not alert
+  interval: 1m
+  input_series:
+  - series: up{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_conjunction_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_operations_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_catalog_metrics_available{instance="api:8000",job="orbitalai-api"}
+    values: 1x20
+  - series: orbitalai_screening_eligible_objects{instance="api:8000",job="orbitalai-api"}
+    values: 75x20
+  - series: orbitalai_earth_orbit_objects{instance="api:8000",job="orbitalai-api"}
+    values: 100x20
+  promql_expr_test:
+  - expr: ALERTS{alertname="OrbitalAIEphemerisCoverageDegraded",alertstate="firing"}
+    eval_time: 20m
+    exp_samples: []
