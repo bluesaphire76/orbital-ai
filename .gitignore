@@ -64,3 +64,4 @@ frontend/public/cesium/
 # Frontend caches
 frontend/.turbo/
 frontend/*.tsbuildinfo
+data/profiles/

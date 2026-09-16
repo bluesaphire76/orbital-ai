@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ConjunctionRunRead(BaseModel):
@@ -22,6 +22,13 @@ class ConjunctionRunRead(BaseModel):
     objects: int
     samples: int
 
+    chunk_count: int = 1
+    chunk_seconds: int = 900
+    duplicate_events_suppressed: int = 0
+    max_chunk_raw_candidates: int = 0
+    max_chunk_unique_candidates: int = 0
+    max_chunk_refinement_attempts: int = 0
+
     propagation_attempts: int
     propagation_failures: int
     expired_skips: int
@@ -31,7 +38,10 @@ class ConjunctionRunRead(BaseModel):
     suppressed_shared_pairs: int
 
     raw_candidates: int
-    unique_candidates: int
+    unique_candidates: int = Field(description=(
+        "Sum of unique candidate pairs evaluated within each chunk; "
+        "not globally unique for runs with more than one chunk."
+    ))
 
     refinement_attempts: int
     refinement_failures: int

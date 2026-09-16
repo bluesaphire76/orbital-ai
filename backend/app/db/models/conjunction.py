@@ -60,6 +60,25 @@ class ConjunctionRun(Base):
     objects: Mapped[int] = mapped_column(Integer, nullable=False)
     samples: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    chunk_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default="1",
+    )
+    chunk_seconds: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=900, server_default="900",
+    )
+    duplicate_events_suppressed: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0",
+    )
+    max_chunk_raw_candidates: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0",
+    )
+    max_chunk_unique_candidates: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0",
+    )
+    max_chunk_refinement_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0",
+    )
+
     propagation_attempts: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -145,7 +164,8 @@ class ConjunctionEvent(Base):
             "run_id",
             "primary_object_id",
             "secondary_object_id",
-            name="uq_conjunction_event_run_pair",
+            "tca",
+            name="uq_conjunction_event_run_pair_tca",
         ),
     )
 

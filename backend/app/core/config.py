@@ -20,6 +20,23 @@ class Settings:
     ephemeris_stale_hours: float
     ephemeris_max_hours: float
 
+    screening_max_objects: int
+    screening_max_propagations: int
+    screening_chunk_seconds: int = 900
+    screening_max_chunk_unique_candidates: int = 4_000_000
+
+    def __post_init__(self) -> None:
+        for name in (
+            "screening_max_objects",
+            "screening_max_propagations",
+            "screening_chunk_seconds",
+            "screening_max_chunk_unique_candidates",
+        ):
+            if getattr(self, name) <= 0:
+                raise ValueError(
+                    f"ORBITAL_{name.upper()} must be greater than zero"
+                )
+
     @classmethod
     def from_env(cls) -> "Settings":
         password = os.getenv("POSTGRES_PASSWORD")
@@ -73,6 +90,30 @@ class Settings:
                 os.getenv(
                     "ORBITAL_EPHEMERIS_MAX_HOURS",
                     "72",
+                )
+            ),
+            screening_max_objects=int(
+                os.getenv(
+                    "ORBITAL_SCREENING_MAX_OBJECTS",
+                    "40000",
+                )
+            ),
+            screening_max_propagations=int(
+                os.getenv(
+                    "ORBITAL_SCREENING_MAX_PROPAGATIONS",
+                    "12000000",
+                )
+            ),
+            screening_chunk_seconds=int(
+                os.getenv(
+                    "ORBITAL_SCREENING_CHUNK_SECONDS",
+                    "900",
+                )
+            ),
+            screening_max_chunk_unique_candidates=int(
+                os.getenv(
+                    "ORBITAL_SCREENING_MAX_CHUNK_UNIQUE_CANDIDATES",
+                    "4000000",
                 )
             ),
         )
