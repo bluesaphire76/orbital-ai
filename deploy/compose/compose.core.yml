@@ -57,6 +57,7 @@ services:
     environment:
       ORBITAL_ENV: ${ORBITAL_ENV}
       ORBITAL_LOG_LEVEL: ${ORBITAL_LOG_LEVEL}
+      ORBITAL_METRICS_DIR: /app/data/observability
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}

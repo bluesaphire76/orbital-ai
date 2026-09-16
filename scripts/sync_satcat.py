@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 from sqlalchemy import (
     func,
     select,
@@ -19,6 +21,7 @@ from ingestion.celestrak_satcat import (
 )
 
 
+@observe_ingestion("satcat")
 def main() -> None:
     records, from_cache = (
         fetch_satcat_csv()

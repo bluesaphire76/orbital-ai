@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -53,6 +55,7 @@ def _chunks(
         ]
 
 
+@observe_ingestion("space-track")
 def sync_space_track_gp(
     session: Session,
     records: list[

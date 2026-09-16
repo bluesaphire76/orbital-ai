@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from backend.app.observability.operations import observe_ingestion
+
 from sqlalchemy import (
     func,
     select,
@@ -22,6 +24,7 @@ from ingestion.providers.space_track import (
 )
 
 
+@observe_ingestion("space-track")
 def main() -> None:
     records, cached = (
         fetch_current_gp()

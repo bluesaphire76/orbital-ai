@@ -65,3 +65,4 @@ frontend/public/cesium/
 frontend/.turbo/
 frontend/*.tsbuildinfo
 data/profiles/
+data/observability/

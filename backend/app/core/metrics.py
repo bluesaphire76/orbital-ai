@@ -11,6 +11,8 @@ from backend.app.observability.conjunction_metrics import (
 from backend.app.observability.propagation_metrics import (
     PropagationMetricsCollector,
 )
+from backend.app.observability.catalog_metrics import CatalogMetricsCollector
+from backend.app.observability.operations import OperationsMetricsCollector
 
 
 PLATFORM_INFO = Gauge(
@@ -39,5 +41,8 @@ def initialize_metrics() -> None:
     REGISTRY.register(
         ConjunctionMetricsCollector()
     )
+
+    REGISTRY.register(CatalogMetricsCollector())
+    REGISTRY.register(OperationsMetricsCollector())
 
     _initialized = True
