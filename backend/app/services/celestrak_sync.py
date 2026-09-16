@@ -47,6 +47,14 @@ def sync_celestrak_records(
                 build_orbital_object_values(record)
             )
 
+            object_values[
+                "has_current_elements"
+            ] = True
+
+            object_values[
+                "is_on_orbit"
+            ] = True
+
             orbital_object, object_created = (
                 object_repository.upsert(
                     norad_cat_id=norad_cat_id,

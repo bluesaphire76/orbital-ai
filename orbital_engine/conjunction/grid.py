@@ -20,6 +20,10 @@ from orbital_engine.conjunction.screening import (
 PairId = tuple[int, int]
 
 
+class CandidateLimitExceeded(RuntimeError):
+    """Screening stopped before retaining more than the candidate budget."""
+
+
 @dataclass(frozen=True, slots=True)
 class GridScreeningResult:
     samples: int
@@ -81,7 +85,12 @@ def screen_propagation_grid(
     step_seconds: float,
     max_relative_speed_km_s: float = 16.0,
     excluded_pairs: Collection[PairId] | None = None,
+    build_linear_conjunctions: bool = True,
+    max_unique_candidates: int | None = None,
 ) -> GridScreeningResult:
+    if max_unique_candidates is not None and max_unique_candidates <= 0:
+        raise ValueError("max_unique_candidates must be greater than zero")
+
     screening_distance_km = (
         inflated_screening_distance_km(
             candidate_distance_km=candidate_distance_km,
@@ -148,6 +157,17 @@ def screen_propagation_grid(
 
             if (
                 existing is None
+                and max_unique_candidates is not None
+                and len(best_candidates) >= max_unique_candidates
+            ):
+                raise CandidateLimitExceeded(
+                    "Unique candidate count exceeds "
+                    "ORBITAL_SCREENING_MAX_CHUNK_UNIQUE_CANDIDATES="
+                    f"{max_unique_candidates}"
+                )
+
+            if (
+                existing is None
                 or candidate.screening_distance_km
                 < existing.screening_distance_km
             ):
@@ -166,48 +186,57 @@ def screen_propagation_grid(
         ClosestApproach
     ] = []
 
-    half_window_seconds = (
-        step_seconds / 2.0
-    )
-
-    for candidate in ordered_candidates:
-        closest = refine_closest_approach(
-            candidate,
-            half_window_seconds=half_window_seconds,
+    if build_linear_conjunctions:
+        half_window_seconds = (
+            step_seconds / 2.0
         )
 
-        if (
-            closest.miss_distance_km
-            > candidate_distance_km
+        for candidate in (
+            ordered_candidates
         ):
-            continue
+            closest = (
+                refine_closest_approach(
+                    candidate,
+                    half_window_seconds=(
+                        half_window_seconds
+                    ),
+                )
+            )
 
-        if (
-            first_sample_time is not None
-            and closest.tca
-            < first_sample_time
-        ):
-            continue
+            if (
+                closest.miss_distance_km
+                > candidate_distance_km
+            ):
+                continue
 
-        if (
-            last_sample_time is not None
-            and closest.tca
-            > last_sample_time
-        ):
-            continue
+            if (
+                first_sample_time
+                is not None
+                and closest.tca
+                < first_sample_time
+            ):
+                continue
 
-        conjunctions.append(
-            closest
+            if (
+                last_sample_time
+                is not None
+                and closest.tca
+                > last_sample_time
+            ):
+                continue
+
+            conjunctions.append(
+                closest
+            )
+
+        conjunctions.sort(
+            key=lambda result: (
+                result.tca,
+                result.miss_distance_km,
+                result.primary_object_id,
+                result.secondary_object_id,
+            )
         )
-
-    conjunctions.sort(
-        key=lambda result: (
-            result.tca,
-            result.miss_distance_km,
-            result.primary_object_id,
-            result.secondary_object_id,
-        )
-    )
 
     return GridScreeningResult(
         samples=sample_count,

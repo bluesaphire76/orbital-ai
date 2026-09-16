@@ -22,6 +22,29 @@ class OrbitalObjectRepository:
 
         return self._session.scalar(statement)
 
+    def list_by_norad_cat_ids(
+        self,
+        norad_cat_ids: list[int],
+    ) -> list[OrbitalObject]:
+        if not norad_cat_ids:
+            return []
+
+        statement = (
+            select(OrbitalObject)
+            .where(
+                OrbitalObject.norad_cat_id.in_(
+                    norad_cat_ids
+                )
+            )
+        )
+
+        return list(
+            self._session.scalars(
+                statement
+            ).all()
+        )
+
+
     def upsert(
         self,
         *,

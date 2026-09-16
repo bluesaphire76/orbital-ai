@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 
+from sgp4.api import accelerated
+
 from backend.app.db.session import (
     get_session_factory,
 )
@@ -12,6 +14,16 @@ from backend.app.services.conjunction_grid import (
 from backend.app.services.conjunction_runs import (
     execute_conjunction_screening,
 )
+
+
+def _parse_start_time(value: str) -> datetime:
+    try:
+        when = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Use an ISO 8601 timestamp") from exc
+    if when.tzinfo is None:
+        raise argparse.ArgumentTypeError("--start-time must include a timezone")
+    return when.astimezone(timezone.utc)
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,6 +46,24 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=60,
         help="Propagation grid interval in seconds",
+    )
+
+    parser.add_argument(
+        "--chunk-seconds",
+        type=int,
+        default=None,
+        help="Chunk width; defaults to ORBITAL_SCREENING_CHUNK_SECONDS (900)",
+    )
+    parser.add_argument(
+        "--start-time",
+        type=_parse_start_time,
+        default=None,
+        help="Exact timezone-aware ISO 8601 run start; defaults to current UTC",
+    )
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="Print all run metrics without listing individual events",
     )
 
     parser.add_argument(
@@ -108,9 +138,7 @@ def main() -> None:
         args
     )
 
-    start_time = datetime.now(
-        timezone.utc
-    )
+    start_time = args.start_time or datetime.now(timezone.utc)
 
     horizon_seconds = int(
         args.hours * 3600
@@ -137,6 +165,8 @@ def main() -> None:
                 max_relative_speed_km_s=(
                     args.max_relative_speed_km_s
                 ),
+                source="canonical",
+                chunk_seconds=args.chunk_seconds,
             )
         )
 
@@ -150,6 +180,8 @@ def main() -> None:
     print(
         f"Run ID: {execution.run_id}"
     )
+    print("Source: canonical")
+    print(f"SGP4 C++ accelerated: {accelerated}")
 
     print(
         "Duration: "
@@ -170,6 +202,8 @@ def main() -> None:
     print(
         f"Samples: {result.samples}"
     )
+    print(f"Chunk count: {result.chunk_count}")
+    print(f"Chunk seconds: {result.chunk_seconds}")
 
     print(
         "Propagation attempts: "
@@ -207,7 +241,7 @@ def main() -> None:
     )
 
     print(
-        "Unique candidates: "
+        "Chunk-unique candidate evaluations: "
         f"{result.unique_candidates}"
     )
 
@@ -221,10 +255,24 @@ def main() -> None:
         f"{result.refinement_failures}"
     )
 
+    print(f"Episode continuity checks: {result.episode_checks}")
+    print(f"Episode propagation attempts: {result.episode_propagation_attempts}")
+
     print(
-        "Conjunctions: "
+        "Duplicate events suppressed: "
+        f"{result.duplicate_events_suppressed}"
+    )
+    print(f"Max chunk raw candidates: {result.max_chunk_raw_candidates}")
+    print(f"Max chunk unique candidates: {result.max_chunk_unique_candidates}")
+    print(f"Max chunk refinement attempts: {result.max_chunk_refinement_attempts}")
+
+    print(
+        "Conjunction events: "
         f"{len(result.refined_conjunctions)}"
     )
+
+    if args.summary_only:
+        return
 
     for conjunction in (
         result.refined_conjunctions

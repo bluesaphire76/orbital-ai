@@ -59,7 +59,7 @@ class ConjunctionMetricsCollector:
                     ),
                     (
                         "orbitalai_conjunction_last_run_unique_candidates",
-                        "Unique candidate pairs",
+                        "Sum of chunk-unique candidate pair evaluations",
                         run.unique_candidates,
                     ),
                     (
@@ -79,7 +79,7 @@ class ConjunctionMetricsCollector:
                     ),
                     (
                         "orbitalai_conjunction_last_run_suppressed_shared_pairs",
-                        "Suppressed shared-orbit pairs",
+                        "Sum of distinct suppressed shared-orbit pairs per chunk",
                         run.suppressed_shared_pairs,
                     ),
                     (

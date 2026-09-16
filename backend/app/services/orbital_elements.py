@@ -27,6 +27,8 @@ def parse_omm_epoch(value: Any) -> datetime:
 
 def build_orbital_element_values(
     record: dict[str, Any],
+    *,
+    source: str = "celestrak",
 ) -> dict[str, Any]:
     required_fields = (
         "INCLINATION",
@@ -50,7 +52,7 @@ def build_orbital_element_values(
         )
 
     return {
-        "source": "celestrak",
+        "source": source,
         "epoch": parse_omm_epoch(
             record.get("EPOCH")
         ),

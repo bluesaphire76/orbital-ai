@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 from backend.app.db.repositories.orbital_objects import (
     OrbitalObjectRepository,
 )
+from backend.app.services.orbital_object_types import (
+    normalize_object_type,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +53,9 @@ def build_orbital_object_values(
     values = {
         "object_name": object_name,
         "object_id": record.get("OBJECT_ID"),
-        "object_type": record.get("OBJECT_TYPE"),
+        "object_type": normalize_object_type(
+            record.get("OBJECT_TYPE")
+        ),
         "country_code": record.get("COUNTRY_CODE"),
         "launch_date": _parse_optional_date(
             record.get("LAUNCH_DATE")

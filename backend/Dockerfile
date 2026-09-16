@@ -18,6 +18,7 @@ COPY backend ./backend
 COPY ingestion ./ingestion
 COPY orbital_engine ./orbital_engine
 COPY workers ./workers
+COPY scripts ./scripts
 COPY migrations ./migrations
 COPY alembic.ini ./
 
