@@ -1,0 +1,19 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: orbitalai-local
+  group_by: [alertname, severity, component]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+# Routing/grouping foundation only. No external notification transport.
+receivers:
+  - name: orbitalai-local
+
+inhibit_rules:
+  - source_matchers: ['severity="critical"']
+    target_matchers: ['severity="warning"']
+    # A failure for one provider/source must not mute another one.
+    equal: [alertname, component, provider, source]

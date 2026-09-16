@@ -1,0 +1,145 @@
+groups:
+  - name: orbitalai-platform
+    rules:
+      - alert: OrbitalAIApiDown
+        expr: up{job="orbitalai-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: OrbitalAI API scrape is unavailable
+          description: Prometheus has been unable to scrape the OrbitalAI API for two minutes. Check the API service and its observability network.
+
+      - alert: OrbitalAIPostgresNotReady
+        expr: >-
+          (orbitalai_database_ready{job="orbitalai-api"} == 0)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+          and on(job, instance)
+          (time() - orbitalai_database_last_check_timestamp_seconds{job="orbitalai-api"} < 120)
+        for: 2m
+        labels:
+          severity: critical
+          component: postgres
+        annotations:
+          summary: OrbitalAI PostgreSQL readiness checks are failing
+          description: The existing readiness probe has reported PostgreSQL unavailable for two minutes while the API remains scrapeable. Check PostgreSQL and database connectivity.
+
+  - name: orbitalai-conjunction
+    rules:
+      - alert: OrbitalAIConjunctionScreeningFailure
+        expr: increase(orbitalai_conjunction_failures_total{job="orbitalai-api",source=~"canonical|celestrak|space-track|other"}[15m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: conjunction
+        annotations:
+          summary: OrbitalAI screening execution failed
+          description: A screening failure counter increased within the last 15 minutes. Inspect the worker execution and its logs for the indicated source.
+
+      # Latest-run gauges persist indefinitely. Only a completed run from the
+      # last 15 minutes, obtained from an available collector/API, is actionable.
+      - alert: OrbitalAIPropagationFailures
+        expr: >-
+          (orbitalai_conjunction_last_run_propagation_failures{job="orbitalai-api"} > 0)
+          and on(job, instance) (orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} > 0)
+          and on(job, instance) (time() - orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} >= 0)
+          and on(job, instance) (time() - orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} < 900)
+          and on(job, instance) (orbitalai_conjunction_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 1m
+        labels:
+          severity: warning
+          component: conjunction
+        annotations:
+          summary: Recent screening reported propagation failures
+          description: The latest screening completed less than 15 minutes ago and reports failed grid propagations. Inspect worker logs and ephemeris inputs.
+
+      - alert: OrbitalAIRefinementFailures
+        expr: >-
+          (orbitalai_conjunction_last_run_refinement_failures{job="orbitalai-api"} > 0)
+          and on(job, instance) (orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} > 0)
+          and on(job, instance) (time() - orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} >= 0)
+          and on(job, instance) (time() - orbitalai_conjunction_last_run_completed_timestamp_seconds{job="orbitalai-api"} < 900)
+          and on(job, instance) (orbitalai_conjunction_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 1m
+        labels:
+          severity: warning
+          component: conjunction
+        annotations:
+          summary: Recent screening reported refinement failures
+          description: The latest screening completed less than 15 minutes ago and reports numerical refinement failures. Inspect the worker execution and its inputs.
+
+  - name: orbitalai-ingestion
+    rules:
+      # Provider timestamps are zero before the first observed success. Cache
+      # TTLs are not schedulers; these initial 2x-TTL thresholds require tuning
+      # to the operator's actual ingestion cadence.
+      - alert: OrbitalAISpaceTrackIngestionStale
+        expr: >-
+          (time() - orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="space-track"} > 7200)
+          and (orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="space-track"} > 0)
+          and on(job, instance) (orbitalai_operations_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 5m
+        labels:
+          severity: warning
+          component: ingestion
+        annotations:
+          summary: Space-Track ingestion is stale
+          description: The last observed successful Space-Track sync is over two hours old, twice the one-hour cache TTL, sustained for five minutes. Check the ingestion cadence and worker execution.
+
+      - alert: OrbitalAICelesTrakIngestionStale
+        expr: >-
+          (time() - orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="celestrak"} > 14400)
+          and (orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="celestrak"} > 0)
+          and on(job, instance) (orbitalai_operations_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 5m
+        labels:
+          severity: warning
+          component: ingestion
+        annotations:
+          summary: CelesTrak ingestion is stale
+          description: The last observed successful CelesTrak sync is over four hours old, twice the two-hour cache TTL, sustained for five minutes. Check the ingestion cadence and worker execution.
+
+      - alert: OrbitalAISatcatIngestionStale
+        expr: >-
+          (time() - orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="satcat"} > 86400)
+          and (orbitalai_ingestion_last_success_timestamp_seconds{job="orbitalai-api",provider="satcat"} > 0)
+          and on(job, instance) (orbitalai_operations_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 5m
+        labels:
+          severity: warning
+          component: ingestion
+        annotations:
+          summary: SATCAT ingestion is stale
+          description: The last observed successful SATCAT sync is over 24 hours old, twice the 12-hour cache TTL, sustained for five minutes. Check the ingestion cadence and worker execution.
+
+      - alert: OrbitalAIIngestionFailure
+        expr: increase(orbitalai_ingestion_failures_total{job="orbitalai-api",provider=~"satcat|celestrak|space-track"}[15m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: ingestion
+        annotations:
+          summary: OrbitalAI ingestion execution failed
+          description: An ingestion failure counter increased within the last 15 minutes. Inspect the indicated provider's worker execution and logs.
+
+  - name: orbitalai-ephemeris
+    rules:
+      - alert: OrbitalAIEphemerisCoverageDegraded
+        expr: >-
+          (orbitalai_screening_eligible_objects{job="orbitalai-api"} / orbitalai_earth_orbit_objects{job="orbitalai-api"} < 0.75)
+          and (orbitalai_earth_orbit_objects{job="orbitalai-api"} > 0)
+          and on(job, instance) (orbitalai_catalog_metrics_available{job="orbitalai-api"} == 1)
+          and on(job, instance) (up{job="orbitalai-api"} == 1)
+        for: 15m
+        labels:
+          severity: warning
+          component: ephemeris
+        annotations:
+          summary: OrbitalAI screening coverage is below its initial baseline
+          description: Fewer than 75 percent of Earth-orbit catalog objects have screening-eligible canonical elements for 15 minutes. Check ephemeris ages and ingestion. This is a coverage condition, not a collision-risk assessment.
