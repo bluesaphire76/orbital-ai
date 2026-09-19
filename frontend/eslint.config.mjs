@@ -5,13 +5,16 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
+
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Cesium runtime assets are generated/copied from node_modules.
+    // They are third-party distribution files and must not be linted.
+    "public/cesium/**",
   ]),
 ]);
 

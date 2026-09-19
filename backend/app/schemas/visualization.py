@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import (
+    date,
+    datetime,
+)
 
 from pydantic import BaseModel
 
@@ -10,6 +13,11 @@ class VisualizationObject(BaseModel):
     norad_cat_id: int
     object_name: str
     object_type: str | None
+
+    owner: str | None
+    launch_date: date | None
+    launch_site: str | None
+    ops_status_code: str | None
 
     epoch: datetime
     ephemeris_status: str
@@ -66,6 +74,11 @@ class PlaybackObject(BaseModel):
     norad_cat_id: int
     object_name: str
     object_type: str | None
+
+    owner: str | None
+    launch_date: date | None
+    launch_site: str | None
+    ops_status_code: str | None
 
     epoch: datetime
     ephemeris_status: str

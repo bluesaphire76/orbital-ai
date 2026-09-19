@@ -58,6 +58,10 @@ export function OrbitalPlaybackControls({
 }) {
   const {
     playback,
+    selectedObjectId,
+    selectedObjectIds,
+    loadedObjectIds,
+    loadForObjects,
     loading,
     error,
     isPlaying,
@@ -71,19 +75,67 @@ export function OrbitalPlaybackControls({
   } = useOrbitalPlayback();
 
 
+  const playbackTargets =
+    selectedObjectIds.length > 0
+      ? selectedObjectIds
+      : selectedObjectId !== null
+        ? [
+            selectedObjectId,
+          ]
+        : [];
+
+
+  const targetLoaded =
+    playback !== null
+    && playbackTargets.length > 0
+    && loadedObjectIds.length
+      === playbackTargets.length
+    && playbackTargets.every(
+      objectId =>
+        loadedObjectIds.includes(
+          objectId
+        )
+    );
+
+
+  async function handlePlayClick() {
+    if (
+      playbackTargets.length
+      === 0
+      || loading
+    ) {
+      return;
+    }
+
+
+    if (!targetLoaded) {
+      await loadForObjects(
+        playbackTargets,
+        true,
+      );
+
+      return;
+    }
+
+
+    setIsPlaying(
+      current =>
+        !current
+    );
+  }
+
+
   return (
     <>
       <button
         className="playButton"
         disabled={
-          !playback
+          playbackTargets.length
+            === 0
           || loading
         }
-        onClick={() =>
-          setIsPlaying(
-            current =>
-              !current
-          )
+        onClick={
+          handlePlayClick
         }
         type="button"
       >
@@ -97,9 +149,18 @@ export function OrbitalPlaybackControls({
 
         <span>
           {
-            isPlaying
-              ? "PAUSE"
-              : "PLAY"
+            loading
+              ? "LOADING"
+              : playbackTargets.length
+                === 0
+                ? "SELECT TARGET"
+                : targetLoaded
+                  ? (
+                      isPlaying
+                        ? "PAUSE"
+                        : "PLAY"
+                    )
+                  : "PLAY TARGET"
           }
         </span>
       </button>
@@ -138,7 +199,7 @@ export function OrbitalPlaybackControls({
           aria-label="Playback timeline"
           className="timelineScrubber"
           disabled={
-            !playback
+            !targetLoaded
             || loading
           }
           max={1000}
@@ -177,7 +238,8 @@ export function OrbitalPlaybackControls({
                     : ""
                 }
                 disabled={
-                  !playback
+                  !targetLoaded
+                  || loading
                 }
                 key={
                   candidate

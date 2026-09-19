@@ -4,6 +4,11 @@ export interface VisualizationObject {
   object_name: string;
   object_type: string | null;
 
+  owner: string | null;
+  launch_date: string | null;
+  launch_site: string | null;
+  ops_status_code: string | null;
+
   epoch: string;
   ephemeris_status: string;
 
@@ -56,6 +61,11 @@ export interface PlaybackObject {
   norad_cat_id: number;
   object_name: string;
   object_type: string | null;
+
+  owner: string | null;
+  launch_date: string | null;
+  launch_site: string | null;
+  ops_status_code: string | null;
 
   epoch: string;
   ephemeris_status: string;

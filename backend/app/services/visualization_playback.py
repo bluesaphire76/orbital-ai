@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import (
     get_settings,
 )
+from backend.app.db.models.orbital_element import (
+    OrbitalElement,
+)
 from backend.app.db.models.orbital_object import (
     OrbitalObject,
 )
@@ -128,6 +131,8 @@ def build_visualization_playback(
     end: datetime,
     step_seconds: int = 60,
     source: str = "celestrak",
+    object_ids: list[int] | None = None,
+    element_ids: list[int] | None = None,
 ) -> VisualizationPlayback:
     start = _ensure_utc(
         start
@@ -157,13 +162,141 @@ def build_visualization_playback(
         )
     )
 
-    elements = (
-        repository.list_latest(
-            source=source
-        )
+
+    requested_ids = (
+        {
+            int(
+                object_id
+            )
+            for object_id
+            in object_ids
+        }
+        if object_ids is not None
+        else None
     )
 
-    object_ids = [
+
+    if (
+        requested_ids is not None
+        and len(
+            requested_ids
+        ) > 16
+    ):
+        raise ValueError(
+            "playback supports at most "
+            "16 targeted objects"
+        )
+
+
+    exact_event_replay = (
+        element_ids is not None
+    )
+
+
+    if element_ids is not None:
+        requested_element_ids = {
+            int(
+                element_id
+            )
+            for element_id
+            in element_ids
+        }
+
+
+        if (
+            len(
+                requested_element_ids
+            )
+            > 16
+        ):
+            raise ValueError(
+                "playback supports at most "
+                "16 exact orbital elements"
+            )
+
+
+        elements = list(
+            session.scalars(
+                select(
+                    OrbitalElement
+                )
+                .where(
+                    OrbitalElement.id.in_(
+                        requested_element_ids
+                    )
+                )
+                .order_by(
+                    OrbitalElement
+                    .orbital_object_id
+                )
+            )
+        )
+
+
+        returned_element_ids = {
+            element.id
+            for element
+            in elements
+        }
+
+
+        missing_element_ids = (
+            requested_element_ids
+            - returned_element_ids
+        )
+
+
+        if missing_element_ids:
+            raise ValueError(
+                "Unknown orbital element IDs: "
+                + ", ".join(
+                    str(
+                        element_id
+                    )
+                    for element_id
+                    in sorted(
+                        missing_element_ids
+                    )
+                )
+            )
+
+
+        if requested_ids is not None:
+            element_object_ids = {
+                element.orbital_object_id
+                for element
+                in elements
+            }
+
+
+            if (
+                element_object_ids
+                != requested_ids
+            ):
+                raise ValueError(
+                    "element_id values do not "
+                    "match requested object_id values"
+                )
+
+    else:
+        elements = (
+            repository.list_latest(
+                source=source
+            )
+        )
+
+
+        if requested_ids is not None:
+            elements = [
+                element
+                for element
+                in elements
+                if element.orbital_object_id
+                in requested_ids
+            ]
+
+
+    catalog_object_ids = [
         element.orbital_object_id
         for element in elements
     ]
@@ -174,11 +307,11 @@ def build_visualization_playback(
                 OrbitalObject
             ).where(
                 OrbitalObject.id.in_(
-                    object_ids
+                    catalog_object_ids
                 )
             )
         )
-        if object_ids
+        if catalog_object_ids
         else []
     )
 
@@ -254,6 +387,7 @@ def build_visualization_playback(
             if (
                 not quality
                 .propagation_allowed
+                and not exact_event_replay
             ):
                 expired = True
                 break
@@ -316,6 +450,22 @@ def build_visualization_playback(
                 object_type=(
                     orbital_object
                     .object_type
+                ),
+                owner=(
+                    orbital_object
+                    .owner
+                ),
+                launch_date=(
+                    orbital_object
+                    .launch_date
+                ),
+                launch_site=(
+                    orbital_object
+                    .launch_site
+                ),
+                ops_status_code=(
+                    orbital_object
+                    .ops_status_code
                 ),
                 epoch=element.epoch,
                 ephemeris_status=(

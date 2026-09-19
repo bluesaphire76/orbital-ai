@@ -58,10 +58,12 @@ class ConjunctionEventRead(BaseModel):
     run_id: int
 
     primary_object_id: int
+    primary_element_id: int
     primary_norad_cat_id: int
     primary_name: str
 
     secondary_object_id: int
+    secondary_element_id: int
     secondary_norad_cat_id: int
     secondary_name: str
 

@@ -44,6 +44,32 @@ export async function GET(
   }
 
 
+  for (
+    const objectId
+    of incoming.getAll(
+      "object_id",
+    )
+  ) {
+    upstream.searchParams.append(
+      "object_id",
+      objectId,
+    );
+  }
+
+
+  for (
+    const elementId
+    of incoming.getAll(
+      "element_id",
+    )
+  ) {
+    upstream.searchParams.append(
+      "element_id",
+      elementId,
+    );
+  }
+
+
   try {
     const response =
       await fetch(

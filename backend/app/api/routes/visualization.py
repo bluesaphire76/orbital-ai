@@ -128,6 +128,12 @@ def get_playback(
         ge=10,
         le=3600,
     ),
+    object_id: list[int] | None = Query(
+        default=None,
+    ),
+    element_id: list[int] | None = Query(
+        default=None,
+    ),
     session: Session = Depends(
         get_db_session
     ),
@@ -138,6 +144,8 @@ def get_playback(
             start=start,
             end=end,
             step_seconds=step_seconds,
+            object_ids=object_id,
+            element_ids=element_id,
         )
 
     except ValueError as exc:

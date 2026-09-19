@@ -1950,3 +1950,1019 @@ button:disabled {
     inset 3px 0 0
     var(--danger);
 }
+
+/* =========================================================
+   v0.4 Orbital Operations Workspace foundation
+   ========================================================= */
+
+.operationsWorkspaceV04 {
+  grid-template-columns:
+    248px minmax(0, 1fr) 300px;
+
+  grid-template-rows:
+    56px minmax(0, 1fr) 72px;
+}
+
+
+.operationsWorkspaceV04
+.operationsHeader {
+  grid-column:
+    1 / -1;
+
+  grid-row:
+    1;
+
+  padding:
+    0 16px;
+}
+
+
+.workspaceHeaderCenter {
+  position:
+    absolute;
+
+  left:
+    50%;
+
+  transform:
+    translateX(-50%);
+
+  display:
+    flex;
+
+  align-items:
+    baseline;
+
+  gap:
+    9px;
+
+  white-space:
+    nowrap;
+}
+
+
+.workspaceHeaderCenter span {
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+
+  letter-spacing:
+    1.35px;
+}
+
+
+.workspaceHeaderCenter strong {
+  color:
+    var(--text);
+
+  font-family:
+    monospace;
+
+  font-size:
+    10px;
+
+  font-weight:
+    500;
+}
+
+
+.operationsWorkspaceV04
+.operationsLeftRail {
+  grid-column:
+    1;
+
+  grid-row:
+    2;
+
+  min-height:
+    0;
+
+  overflow-y:
+    auto;
+
+  border-right:
+    1px solid
+    var(--border);
+
+  background:
+    rgba(
+      5,
+      10,
+      17,
+      0.96
+    );
+}
+
+
+.operationsWorkspaceV04
+.globeWorkspace {
+  grid-column:
+    2;
+
+  grid-row:
+    2;
+
+  min-width:
+    0;
+
+  min-height:
+    0;
+}
+
+
+.operationsContextRail {
+  grid-column:
+    3;
+
+  grid-row:
+    2;
+
+  min-height:
+    0;
+
+  overflow-y:
+    auto;
+
+  border-left:
+    1px solid
+    var(--border);
+
+  background:
+    rgba(
+      5,
+      10,
+      17,
+      0.96
+    );
+
+  z-index:
+    8;
+}
+
+
+.workspaceRailSection,
+.contextPanel {
+  padding:
+    16px;
+
+  border-bottom:
+    1px solid
+    var(--border);
+}
+
+
+.workspaceSectionHeader {
+  display:
+    flex;
+
+  align-items:
+    flex-start;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+}
+
+
+.workspaceSectionHeader
+.sectionLabel {
+  margin-bottom:
+    5px;
+}
+
+
+.workspaceSectionHeader
+strong {
+  display:
+    block;
+
+  font-size:
+    11px;
+
+  font-weight:
+    500;
+}
+
+
+.workspaceMetricGrid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    8px;
+
+  margin-top:
+    14px;
+}
+
+
+.workspaceMetric {
+  min-width:
+    0;
+
+  padding:
+    10px;
+
+  border:
+    1px solid
+    rgba(
+      115,
+      156,
+      190,
+      0.11
+    );
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.018
+    );
+}
+
+
+.workspaceMetric span {
+  display:
+    block;
+
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+}
+
+
+.workspaceMetric strong {
+  display:
+    block;
+
+  margin-top:
+    5px;
+
+  font-family:
+    monospace;
+
+  font-size:
+    13px;
+
+  font-weight:
+    500;
+}
+
+
+.healthyValue {
+  color:
+    var(--green);
+}
+
+
+.workspaceMetricRow {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  padding:
+    8px 0;
+
+  border-bottom:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.035
+    );
+}
+
+
+.workspaceMetricRow span {
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+}
+
+
+.workspaceMetricRow strong {
+  font-family:
+    monospace;
+
+  font-size:
+    10px;
+
+  font-weight:
+    500;
+}
+
+
+.contextEmptyState {
+  padding:
+    14px;
+
+  border:
+    1px solid
+    rgba(
+      115,
+      156,
+      190,
+      0.11
+    );
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.018
+    );
+}
+
+
+.contextEmptyState strong {
+  display:
+    block;
+
+  font-size:
+    12px;
+
+  font-weight:
+    500;
+}
+
+
+.contextEmptyState p {
+  margin:
+    8px 0 0;
+
+  color:
+    var(--muted);
+
+  font-size:
+    10px;
+
+  line-height:
+    1.55;
+}
+
+
+.contextFacts {
+  display:
+    grid;
+
+  gap:
+    7px;
+
+  margin-top:
+    13px;
+
+  padding-top:
+    12px;
+
+  border-top:
+    1px solid
+    var(--border);
+}
+
+
+.contextFacts span {
+  color:
+    #8a9aad;
+
+  font-size:
+    9px;
+
+  line-height:
+    1.45;
+}
+
+
+.contextEmptyState.compact {
+  padding:
+    10px;
+}
+
+
+.queuePanel {
+  padding-bottom:
+    12px;
+}
+
+
+.queueCount {
+  min-width:
+    28px;
+
+  padding:
+    3px 6px;
+
+  border:
+    1px solid
+    var(--border-strong);
+
+  color:
+    var(--accent);
+
+  font-family:
+    monospace;
+
+  font-size:
+    9px;
+
+  text-align:
+    center;
+}
+
+
+.compactEventQueue {
+  display:
+    grid;
+
+  gap:
+    0;
+
+  margin-top:
+    12px;
+
+  border-top:
+    1px solid
+    var(--border);
+}
+
+
+.compactEventRow {
+  display:
+    grid;
+
+  grid-template-columns:
+    28px minmax(
+      0,
+      1fr
+    );
+
+  gap:
+    9px;
+
+  padding:
+    11px 0;
+
+  border-bottom:
+    1px solid
+    var(--border);
+}
+
+
+.eventRank {
+  color:
+    #445464;
+
+  font-family:
+    monospace;
+
+  font-size:
+    9px;
+}
+
+
+.eventBody {
+  min-width:
+    0;
+}
+
+
+.eventBody > strong {
+  display:
+    inline;
+
+  overflow:
+    hidden;
+
+  color:
+    #c8d5e0;
+
+  font-size:
+    9px;
+
+  font-weight:
+    500;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+.eventPairSeparator {
+  margin:
+    0 5px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+}
+
+
+.eventMeta {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  gap:
+    8px;
+
+  margin-top:
+    5px;
+
+  color:
+    var(--muted);
+
+  font-family:
+    monospace;
+
+  font-size:
+    8px;
+}
+
+
+.eventMeta span:first-child {
+  color:
+    var(--accent);
+}
+
+
+.queueFooter {
+  padding-top:
+    10px;
+
+  color:
+    #596b7d;
+
+  font-size:
+    8px;
+
+  text-align:
+    right;
+}
+
+
+.operationsWorkspaceV04
+.viewportTitle {
+  top:
+    18px;
+
+  left:
+    18px;
+}
+
+
+.operationsWorkspaceV04
+.globeToolbar {
+  top:
+    16px;
+
+  right:
+    16px;
+}
+
+
+.operationsWorkspaceV04
+.globeLegend {
+  right:
+    16px;
+
+  bottom:
+    14px;
+}
+
+
+.operationsWorkspaceV04
+.operationsTimeline {
+  display:
+    grid;
+
+  grid-column:
+    1 / -1;
+
+  grid-row:
+    3;
+}
+
+
+@media (
+  max-width:
+    1180px
+) {
+  .operationsWorkspaceV04 {
+    grid-template-columns:
+      220px minmax(
+        0,
+        1fr
+      );
+  }
+
+  .operationsContextRail {
+    display:
+      none;
+  }
+}
+
+
+@media (
+  max-width:
+    850px
+) {
+  .operationsWorkspaceV04 {
+    grid-template-columns:
+      1fr;
+  }
+
+  .operationsWorkspaceV04
+  .operationsLeftRail {
+    display:
+      none;
+  }
+
+  .operationsWorkspaceV04
+  .globeWorkspace {
+    grid-column:
+      1;
+  }
+
+  .workspaceHeaderCenter {
+    display:
+      none;
+  }
+}
+
+
+/* ==========================================================
+   Orbital catalog search
+   ========================================================== */
+
+.catalogSearchSection {
+  position: relative;
+  z-index: 30;
+}
+
+.catalogSearch {
+  position: relative;
+}
+
+.catalogSearchInput {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  background: rgba(7, 13, 24, 0.88);
+  color: #e5edf7;
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  padding: 10px 11px;
+}
+
+.catalogSearchInput::placeholder {
+  color: rgba(148, 163, 184, 0.58);
+}
+
+.catalogSearchInput:focus {
+  border-color: rgba(85, 214, 239, 0.72);
+  box-shadow: 0 0 0 1px rgba(85, 214, 239, 0.14);
+}
+
+.catalogSearchCount {
+  color: rgba(148, 163, 184, 0.72);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.catalogSearchResults {
+  position: absolute;
+  top: calc(100% - 17px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid rgba(85, 214, 239, 0.2);
+  border-radius: 6px;
+  background: rgba(5, 10, 19, 0.98);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.42);
+}
+
+.catalogSearchResult {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.09);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.catalogSearchResult:last-child {
+  border-bottom: 0;
+}
+
+.catalogSearchResult:hover,
+.catalogSearchResult:focus-visible {
+  background: rgba(85, 214, 239, 0.09);
+  outline: none;
+}
+
+.catalogSearchResult span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.catalogSearchResult strong {
+  overflow: hidden;
+  color: #e7eef8;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogSearchResult small {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.catalogSearchResult em {
+  flex: 0 0 auto;
+  color: #55d6ef;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+.catalogSearchEmpty {
+  color: rgba(148, 163, 184, 0.68);
+  font-size: 10px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.catalogSearchHint {
+  display: block;
+  margin-top: 6px;
+  color: rgba(148, 163, 184, 0.52);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.conjunctionAnalyzeButton {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(67, 214, 255, 0.34);
+  border-radius: 4px;
+  background: rgba(20, 97, 126, 0.18);
+  color: #8de7ff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+}
+
+.conjunctionAnalyzeButton:hover:not(:disabled) {
+  border-color: rgba(67, 214, 255, 0.72);
+  background: rgba(20, 97, 126, 0.32);
+}
+
+.conjunctionAnalyzeButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Orbital object legend */
+
+.orbitalObjectLegend {
+  position: absolute;
+
+  top: 14px;
+  left: 14px;
+
+  z-index: 12;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  pointer-events: none;
+}
+
+.orbitalObjectLegendToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-width: 126px;
+
+  padding:
+    7px 9px;
+
+  border:
+    1px solid
+    rgba(100, 200, 230, 0.24);
+
+  border-radius:
+    5px;
+
+  background:
+    rgba(2, 8, 15, 0.78);
+
+  backdrop-filter:
+    blur(8px);
+
+  color:
+    rgba(218, 237, 245, 0.82);
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.09em;
+
+  cursor:
+    pointer;
+
+  pointer-events:
+    auto;
+}
+
+.orbitalObjectLegendToggle:hover {
+  border-color:
+    rgba(86, 217, 239, 0.55);
+
+  background:
+    rgba(5, 20, 31, 0.90);
+
+  color:
+    #dff8ff;
+}
+
+.orbitalObjectLegendPanel {
+  min-width:
+    218px;
+
+  margin-top:
+    6px;
+
+  padding:
+    10px 12px;
+
+  border:
+    1px solid
+    rgba(100, 200, 230, 0.20);
+
+  border-radius:
+    6px;
+
+  background:
+    rgba(2, 8, 15, 0.86);
+
+  backdrop-filter:
+    blur(8px);
+
+  box-shadow:
+    0 8px 28px
+    rgba(0, 0, 0, 0.30);
+
+  pointer-events:
+    auto;
+}
+
+.orbitalObjectLegendTitle {
+  margin-bottom:
+    7px;
+
+  color:
+    rgba(218, 237, 245, 0.72);
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.12em;
+}
+
+.orbitalObjectLegendRow {
+  display:
+    grid;
+
+  grid-template-columns:
+    10px minmax(0, 1fr) auto;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  min-height:
+    21px;
+}
+
+.orbitalObjectLegendDot {
+  display:
+    block;
+
+  width:
+    7px;
+
+  height:
+    7px;
+
+  border-radius:
+    50%;
+}
+
+.orbitalObjectLegendLabel {
+  color:
+    rgba(230, 241, 246, 0.88);
+
+  font-size:
+    10px;
+}
+
+.orbitalObjectLegendCount {
+  color:
+    rgba(181, 203, 214, 0.70);
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size:
+    9px;
+
+  font-variant-numeric:
+    tabular-nums;
+}
