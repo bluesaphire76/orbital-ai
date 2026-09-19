@@ -1,27 +1,350 @@
 # OrbitalAI
 
-Local-first orbital intelligence and conjunction assessment platform.
+Local-first orbital intelligence, visualization and conjunction assessment platform.
 
-## Initial goals
+OrbitalAI is designed as a sovereign, deterministic orbital operations platform for ingesting public orbital data, maintaining a local catalogue, propagating trajectories, screening conjunctions and supporting operator analysis through an interactive 3D mission-control workspace.
 
-- Ingest public orbital object data
-- Maintain a local orbital catalogue
-- Propagate orbital trajectories
-- Detect potential conjunctions
-- Calculate miss distance and relative velocity
-- Track conjunction risk over time
-- Generate alerts
-- Add local AI-assisted risk interpretation and prioritisation
+## Project status
 
-## Architecture principle
+Current development baseline: **v0.4**
 
-Orbital mechanics and collision calculations are deterministic.
+The v0.4 work introduces the Orbital Operations Workspace, including:
 
-AI is used for:
-- prioritisation
-- anomaly detection
-- trend analysis
-- explanation
-- decision support
+- scalable 3D Earth visualization with CesiumJS;
+- canonical orbital catalogue rendering;
+- object search and selection;
+- targeted object playback;
+- conjunction analysis and exact-event replay;
+- semantic object classification and coloring;
+- collapsible object legend;
+- high-resolution Earth imagery and terrain;
+- solar day/night illumination;
+- local NASA Black Marble night-light rendering.
 
-AI is not the authoritative source for orbital propagation or collision probability.
+The previous stable release is **v0.3.0**.
+
+## Core principles
+
+### Deterministic orbital mechanics
+
+Orbital propagation and conjunction calculations are deterministic and authoritative.
+
+The browser and AI layer do not calculate authoritative:
+
+- orbital trajectories;
+- time of closest approach (TCA);
+- miss distance;
+- relative velocity;
+- collision probability.
+
+Authoritative orbital mechanics remain in the backend.
+
+### AI is assistive, not authoritative
+
+AI is intended for:
+
+- prioritisation;
+- anomaly detection;
+- trend analysis;
+- explanation;
+- decision support.
+
+AI must not replace deterministic propagation, screening or collision-risk calculations.
+
+### Local-first architecture
+
+OrbitalAI is designed to keep the operational catalogue, propagation pipeline, conjunction analysis and future AI inference under local control.
+
+External services are used as orbital-data sources and, where configured, for high-resolution geospatial assets.
+
+## Architecture
+
+```text
+                 +------------------+
+                 |     SATCAT       |
+                 | metadata / type  |
+                 +---------+--------+
+                           |
+                 +---------v--------+
+                 |   CelesTrak GP   |
+                 | public fallback  |
+                 +---------+--------+
+                           |
+                 +---------v--------+
+                 |   Space-Track    |
+                 | primary GP data  |
+                 +---------+--------+
+                           |
+                           v
+                 +------------------+
+                 |    PostgreSQL    |
+                 | local catalogue  |
+                 +---------+--------+
+                           |
+                           v
+              +--------------------------+
+              | Canonical ephemeris      |
+              | selection + freshness    |
+              +------------+-------------+
+                           |
+              +------------+-------------+
+              |                          |
+              v                          v
+     +------------------+       +----------------------+
+     | SGP4 propagation |       | Conjunction screening|
+     +--------+---------+       +----------+-----------+
+              |                            |
+              +-------------+--------------+
+                            |
+                            v
+                 +----------------------+
+                 | FastAPI backend      |
+                 | deterministic APIs   |
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 | Next.js + CesiumJS   |
+                 | Operations Workspace |
+                 +----------------------+
+```
+
+## Main capabilities
+
+### Orbital catalogue
+
+- local PostgreSQL catalogue;
+- SATCAT metadata and classification;
+- CelesTrak GP ingestion;
+- Space-Track GP ingestion;
+- historical orbital elements;
+- canonical ephemeris selection;
+- freshness and stale-element controls.
+
+### Propagation
+
+- deterministic SGP4 propagation;
+- backend-generated state vectors;
+- Earth-fixed visualization coordinates;
+- targeted playback for selected objects;
+- no browser-side authoritative propagation.
+
+### Conjunction screening
+
+- scalable deterministic screening;
+- cKDTree-based candidate detection;
+- chunked screening windows;
+- numerical refinement;
+- duplicate-event suppression;
+- exact event replay using the original orbital-element IDs.
+
+Probability of collision is not currently calculated because covariance data is not yet part of the authoritative pipeline.
+
+### Orbital Operations Workspace
+
+The v0.4 workspace provides:
+
+- interactive 3D Earth;
+- large-scale object rendering;
+- catalogue search;
+- active-object context;
+- multi-object selection;
+- targeted playback;
+- conjunction queue;
+- conjunction ANALYZE workflow;
+- exact TCA replay;
+- pair framing and conjunction visualization.
+
+The globe remains authoritative for interactive selection state to avoid React/Cesium state races.
+
+### Earth visualization
+
+High-resolution mode uses Cesium imagery and terrain.
+
+OrbitalAI also provides:
+
+- real solar illumination;
+- day/night terminator;
+- atmosphere lighting;
+- local NASA Black Marble night-light texture;
+- unlit emissive city-light rendering on the night hemisphere.
+
+The experimental NASA Black Marble 500 m tiled/LOD implementation was rejected after regression testing. The stable local 3 km texture remains the current implementation.
+
+## Orbital object semantics
+
+Current visualization colors:
+
+- `PAYLOAD` — cyan;
+- `DEBRIS` — orange;
+- `ROCKET_BODY` — yellow;
+- `UNKNOWN / OTHER` — neutral white.
+
+Object classification comes from catalogue metadata rather than ephemeris freshness.
+
+## Ephemeris policy
+
+Current freshness thresholds:
+
+- warning: **12 hours**;
+- stale: **24 hours**;
+- maximum accepted age: **72 hours**.
+
+Canonical source selection is shared by visualization and conjunction analysis so the globe and deterministic screening operate on the same data policy.
+
+## Technology stack
+
+### Backend
+
+- Python
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- SGP4 / Skyfield-based orbital processing
+- SciPy / cKDTree conjunction screening
+
+### Frontend
+
+- Next.js 16
+- React 19
+- TypeScript
+- CesiumJS
+- Tailwind CSS
+
+### Observability
+
+- Prometheus
+- Grafana
+- Alertmanager
+- Loki
+- Grafana Alloy
+
+### Deployment
+
+- Docker Compose
+- local-first Linux / WSL development environment
+
+## Data sources
+
+OrbitalAI currently integrates:
+
+### SATCAT
+
+Used for:
+
+- object metadata;
+- object type;
+- launch information;
+- operator / owner metadata;
+- decay state;
+- orbital catalogue classification.
+
+### CelesTrak
+
+Used as:
+
+- public GP source;
+- fallback orbital-element source;
+- public catalogue bootstrap source.
+
+### Space-Track
+
+Used as:
+
+- primary current GP source;
+- preferred source in canonical ephemeris selection when eligible.
+
+## Repository structure
+
+```text
+backend/          FastAPI application, services and persistence
+frontend/         Next.js / CesiumJS Orbital Operations Workspace
+ingestion/        external orbital-data providers
+orbital_engine/   deterministic orbital and conjunction algorithms
+workers/          ingestion, propagation and screening workers
+scripts/          operational and maintenance commands
+observability/    Prometheus, Grafana, Alertmanager, Loki and Alloy
+deploy/           Docker Compose deployment
+migrations/       Alembic database migrations
+tests/            backend and observability tests
+docs/             architecture and design documentation
+data/             local runtime and cached orbital data
+```
+
+## Development validation
+
+Backend tests:
+
+```bash
+pytest -q
+```
+
+Frontend type checking:
+
+```bash
+cd frontend
+npx tsc --noEmit
+```
+
+Frontend lint:
+
+```bash
+npm run lint
+```
+
+Frontend production build:
+
+```bash
+npm run build
+```
+
+## Current v0.4 hardening roadmap
+
+The next development activity is **Automated Catalog & Ephemeris Synchronization**.
+
+Planned scope:
+
+- automated SATCAT synchronization;
+- automated CelesTrak synchronization;
+- automated Space-Track synchronization;
+- provider-specific schedules;
+- synchronization locking;
+- persistent last-run / last-success state;
+- retry and backoff;
+- Prometheus synchronization metrics;
+- API synchronization-status endpoint;
+- freshness visibility in the operations UI.
+
+Target default cadences:
+
+- Space-Track: approximately every **1 hour**;
+- CelesTrak: approximately every **2 hours**;
+- SATCAT: approximately every **12 hours**.
+
+## Documentation
+
+Architecture documentation is maintained under:
+
+```text
+docs/architecture/
+```
+
+The v0.4 Orbital Operations Workspace is documented in:
+
+```text
+docs/architecture/v0.4-orbital-operations-workspace.md
+```
+
+## Project direction
+
+OrbitalAI is evolving toward a sovereign orbital operations platform combining:
+
+- deterministic orbital mechanics;
+- scalable conjunction analysis;
+- operator-focused 3D visualization;
+- local observability;
+- controlled local AI assistance.
+
+The design principle remains simple:
+
+> deterministic systems calculate the orbit; AI helps the human understand and prioritise what matters.
