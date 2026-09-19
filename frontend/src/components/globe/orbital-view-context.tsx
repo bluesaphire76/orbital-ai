@@ -12,6 +12,7 @@ export type CameraMode =
   | "pan";
 
 export type ImageryMode =
+  | "highres"
   | "local"
   | "satellite";
 
@@ -76,8 +77,21 @@ export function OrbitalViewProvider({
     setLayers,
   ] = useState<OrbitalLayers>({
     objects: true,
-    labels: true,
+
+    /*
+     * Full-catalog labels are intentionally
+     * disabled by default. Rendering thousands
+     * of simultaneous labels makes the globe
+     * operationally unreadable.
+     */
+    labels: false,
+
+    /*
+     * Trajectories become an explicit analysis
+     * action in v0.4 rather than a global layer.
+     */
     trajectories: true,
+
     conjunctions: true,
   });
 
@@ -90,16 +104,11 @@ export function OrbitalViewProvider({
   );
 
 
-  /*
-   * Satellite is the default visual
-   * mode. Local remains available
-   * as the offline fallback.
-   */
   const [
     imageryMode,
     setImageryMode,
   ] = useState<ImageryMode>(
-    "satellite"
+    "highres"
   );
 
 

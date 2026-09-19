@@ -97,6 +97,9 @@ def list_run_events(
             primary_object_id=(
                 primary.id
             ),
+            primary_element_id=(
+                event.primary_element_id
+            ),
             primary_norad_cat_id=(
                 primary.norad_cat_id
             ),
@@ -105,6 +108,9 @@ def list_run_events(
             ),
             secondary_object_id=(
                 secondary.id
+            ),
+            secondary_element_id=(
+                event.secondary_element_id
             ),
             secondary_norad_cat_id=(
                 secondary.norad_cat_id

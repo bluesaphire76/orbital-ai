@@ -27,6 +27,9 @@ from backend.app.schemas.visualization import (
 from backend.app.services.ephemeris_quality import (
     assess_ephemeris_quality,
 )
+from backend.app.services.ephemeris_selection import (
+    select_screening_ephemerides,
+)
 from orbital_engine.frames import (
     itrs_state_from_satrec,
 )
@@ -88,7 +91,7 @@ def build_visualization_snapshot(
     session: Session,
     *,
     when: datetime,
-    source: str = "celestrak",
+    source: str = "canonical",
 ) -> VisualizationSnapshot:
     when = _ensure_utc(
         when
@@ -96,17 +99,48 @@ def build_visualization_snapshot(
 
     settings = get_settings()
 
-    repository = (
-        OrbitalElementRepository(
-            session
+    if source == "canonical":
+        selection = (
+            select_screening_ephemerides(
+                session,
+                target_time=when,
+            )
         )
-    )
 
-    elements = (
-        repository.list_latest(
-            source=source
+        elements = list(
+            selection
+            .eligible_elements
         )
-    )
+
+        total_elements = (
+            selection
+            .canonical_total
+        )
+
+        expired_skips = (
+            selection
+            .expired_total
+        )
+
+    else:
+        repository = (
+            OrbitalElementRepository(
+                session
+            )
+        )
+
+        elements = (
+            repository.list_latest(
+                source=source
+            )
+        )
+
+        total_elements = len(
+            elements
+        )
+
+        expired_skips = 0
+
 
     objects_by_id = _object_map(
         session,
@@ -120,7 +154,6 @@ def build_visualization_snapshot(
         VisualizationObject
     ] = []
 
-    expired_skips = 0
     propagation_failures = 0
 
     for element in elements:
@@ -154,7 +187,9 @@ def build_visualization_snapshot(
         )
 
         if not quality.propagation_allowed:
-            expired_skips += 1
+            if source != "canonical":
+                expired_skips += 1
+
             continue
 
         try:
@@ -191,6 +226,22 @@ def build_visualization_snapshot(
                     orbital_object
                     .object_type
                 ),
+                owner=(
+                    orbital_object
+                    .owner
+                ),
+                launch_date=(
+                    orbital_object
+                    .launch_date
+                ),
+                launch_site=(
+                    orbital_object
+                    .launch_site
+                ),
+                ops_status_code=(
+                    orbital_object
+                    .ops_status_code
+                ),
                 epoch=element.epoch,
                 ephemeris_status=(
                     quality.status.value
@@ -226,8 +277,8 @@ def build_visualization_snapshot(
         at=when,
         frame="ITRS/ECEF",
         objects=rendered,
-        total_elements=len(
-            elements
+        total_elements=(
+            total_elements
         ),
         rendered_objects=len(
             rendered

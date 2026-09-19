@@ -100,6 +100,31 @@ export function OrbitalViewControls() {
           <input
             checked={
               imageryMode
+              === "highres"
+            }
+            name="earth-imagery"
+            onChange={() =>
+              setImageryMode(
+                "highres"
+              )
+            }
+            type="radio"
+          />
+
+          <span>
+            High Res
+          </span>
+
+          <small>
+            Cesium ion
+          </small>
+        </label>
+
+
+        <label className="layerRow">
+          <input
+            checked={
+              imageryMode
               === "satellite"
             }
             name="earth-imagery"

@@ -43,3 +43,49 @@ def test_missing_norad_cat_id_is_rejected() -> None:
                 "OBJECT_NAME": "Unknown",
             }
         )
+
+
+def test_gp_record_preserves_satcat_metadata() -> None:
+    record = {
+        "NORAD_CAT_ID": 25544,
+        "OBJECT_NAME": "ISS (ZARYA)",
+        "OBJECT_ID": "1998-067A",
+        "EPOCH": "2026-09-17T12:00:00",
+        "MEAN_MOTION": 15.49,
+    }
+
+    _, values = (
+        build_orbital_object_values(
+            record
+        )
+    )
+
+    assert (
+        values["object_name"]
+        == "ISS (ZARYA)"
+    )
+
+    assert (
+        values["object_id"]
+        == "1998-067A"
+    )
+
+    assert (
+        "object_type"
+        not in values
+    )
+
+    assert (
+        "country_code"
+        not in values
+    )
+
+    assert (
+        "launch_date"
+        not in values
+    )
+
+    assert (
+        "decay_date"
+        not in values
+    )

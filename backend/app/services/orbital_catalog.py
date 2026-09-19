@@ -50,21 +50,81 @@ def build_orbital_object_values(
         or f"NORAD {norad_cat_id}"
     )
 
-    values = {
+    values: dict[str, Any] = {
         "object_name": object_name,
-        "object_id": record.get("OBJECT_ID"),
-        "object_type": normalize_object_type(
-            record.get("OBJECT_TYPE")
-        ),
-        "country_code": record.get("COUNTRY_CODE"),
-        "launch_date": _parse_optional_date(
-            record.get("LAUNCH_DATE")
-        ),
-        "decay_date": _parse_optional_date(
-            record.get("DECAY_DATE")
-        ),
         "source": "celestrak",
     }
+
+
+    object_id = record.get(
+        "OBJECT_ID"
+    )
+
+    if object_id not in (
+        None,
+        "",
+    ):
+        values[
+            "object_id"
+        ] = object_id
+
+
+    object_type = record.get(
+        "OBJECT_TYPE"
+    )
+
+    if object_type not in (
+        None,
+        "",
+    ):
+        values[
+            "object_type"
+        ] = normalize_object_type(
+            object_type
+        )
+
+
+    country_code = record.get(
+        "COUNTRY_CODE"
+    )
+
+    if country_code not in (
+        None,
+        "",
+    ):
+        values[
+            "country_code"
+        ] = country_code
+
+
+    launch_date = record.get(
+        "LAUNCH_DATE"
+    )
+
+    if launch_date not in (
+        None,
+        "",
+    ):
+        values[
+            "launch_date"
+        ] = _parse_optional_date(
+            launch_date
+        )
+
+
+    decay_date = record.get(
+        "DECAY_DATE"
+    )
+
+    if decay_date not in (
+        None,
+        "",
+    ):
+        values[
+            "decay_date"
+        ] = _parse_optional_date(
+            decay_date
+        )
 
     return norad_cat_id, values
 

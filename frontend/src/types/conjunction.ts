@@ -37,10 +37,12 @@ export interface ConjunctionEvent {
   run_id: number;
 
   primary_object_id: number;
+  primary_element_id: number;
   primary_norad_cat_id: number;
   primary_name: string;
 
   secondary_object_id: number;
+  secondary_element_id: number;
   secondary_norad_cat_id: number;
   secondary_name: string;
 

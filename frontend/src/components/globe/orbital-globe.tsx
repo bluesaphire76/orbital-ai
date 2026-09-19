@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -24,6 +25,7 @@ import type {
 
 
 import type {
+  ObjectTrajectory,
   VisualizationObject,
   VisualizationSnapshot,
 } from "@/types/visualization";
@@ -47,6 +49,115 @@ interface OrbitalGlobeProps {
 interface PickMovement {
   position:
     import("cesium").Cartesian2;
+}
+
+
+type OrbitalObjectKind =
+  | "PAYLOAD"
+  | "DEBRIS"
+  | "ROCKET_BODY"
+  | "UNKNOWN";
+
+
+const ORBITAL_OBJECT_KINDS:
+  OrbitalObjectKind[] = [
+    "PAYLOAD",
+    "DEBRIS",
+    "ROCKET_BODY",
+    "UNKNOWN",
+  ];
+
+
+const ORBITAL_OBJECT_VISUALS:
+  Record<
+    OrbitalObjectKind,
+    {
+      label: string;
+      color: string;
+    }
+  > = {
+    PAYLOAD: {
+      label:
+        "Payload / Satellite",
+      color:
+        "#56d9ef",
+    },
+
+    DEBRIS: {
+      label:
+        "Debris",
+      color:
+        "#ef8c55",
+    },
+
+    ROCKET_BODY: {
+      label:
+        "Rocket Body",
+      color:
+        "#f1c75b",
+    },
+
+    UNKNOWN: {
+      label:
+        "Unknown / Other",
+      color:
+        "#f4f7fb",
+    },
+  };
+
+
+function normalizeOrbitalObjectKind(
+  value:
+    string
+    | null
+    | undefined,
+): OrbitalObjectKind {
+  const normalized =
+    (
+      value
+      ?? "UNKNOWN"
+    )
+      .trim()
+      .toUpperCase()
+      .replaceAll(
+        " ",
+        "_",
+      )
+      .replaceAll(
+        "-",
+        "_",
+      );
+
+
+  switch (normalized) {
+    case "PAYLOAD":
+      return "PAYLOAD";
+
+    case "DEBRIS":
+      return "DEBRIS";
+
+    case "ROCKET_BODY":
+      return "ROCKET_BODY";
+
+    default:
+      return "UNKNOWN";
+  }
+}
+
+
+function orbitalObjectColorHex(
+  value:
+    string
+    | null
+    | undefined,
+) {
+  return (
+    ORBITAL_OBJECT_VISUALS[
+      normalizeOrbitalObjectKind(
+        value
+      )
+    ].color
+  );
 }
 
 
@@ -77,6 +188,42 @@ function approximateAltitudeKm(
   return (
     radius - 6_378_137
   ) / 1000.0;
+}
+
+
+const OPERATIONAL_STATUS_LABELS:
+  Record<string, string> = {
+    "+": "Operational",
+    "-": "Nonoperational",
+    "P": "Partially Operational",
+    "B": "Backup / Standby",
+    "S": "Spare",
+    "X": "Extended Mission",
+    "D": "Decayed",
+    "?": "Unknown",
+  };
+
+
+function formatOperationalStatus(
+  value: string | null,
+) {
+  if (!value) {
+    return "Unknown";
+  }
+
+
+  const label =
+    OPERATIONAL_STATUS_LABELS[
+      value
+    ];
+
+
+  if (!label) {
+    return value;
+  }
+
+
+  return `${label} (${value})`;
 }
 
 
@@ -111,6 +258,11 @@ export function OrbitalGlobe({
   const viewerRef =
     useRef<
       import("cesium").Viewer | null
+    >(null);
+
+  const cityLightsPrimitiveRef =
+    useRef<
+      import("cesium").Primitive | null
     >(null);
 
   const mapCameraControllerRef =
@@ -181,6 +333,62 @@ export function OrbitalGlobe({
     null,
   );
 
+
+  const [
+    isolateSelection,
+    setIsolateSelection,
+  ] = useState(false);
+
+
+  /*
+   * Publish the active object outside the globe
+   * without moving Cesium selection state into
+   * a shared React context.
+   *
+   * Playback/search can subscribe to this event
+   * while OrbitalGlobe remains authoritative for
+   * visual selection, flyTo and tracking.
+   */
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(
+        "orbitalai:active-object-change",
+        {
+          detail: {
+            objectId: activeObjectId,
+          },
+        },
+      ),
+    );
+  }, [
+    activeObjectId,
+  ]);
+
+
+
+  /*
+   * Publish the complete visual selection for
+   * targeted multi-object playback.
+   *
+   * OrbitalGlobe remains authoritative for
+   * selection itself.
+   */
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(
+        "orbitalai:selected-objects-change",
+        {
+          detail: {
+            objectIds:
+              selectedIds,
+          },
+        },
+      ),
+    );
+  }, [
+    selectedIds,
+  ]);
+
   const [
     cameraLocked,
     setCameraLocked,
@@ -199,6 +407,70 @@ export function OrbitalGlobe({
   ] = useState<
     string | null
   >(null);
+
+
+  const [
+    legendOpen,
+    setLegendOpen,
+  ] = useState(false);
+
+
+  const objectLegend =
+    useMemo(
+      () => {
+        const counts:
+          Record<
+            OrbitalObjectKind,
+            number
+          > = {
+            PAYLOAD: 0,
+            DEBRIS: 0,
+            ROCKET_BODY: 0,
+            UNKNOWN: 0,
+          };
+
+
+        for (
+          const object
+          of snapshot?.objects
+          ?? []
+        ) {
+          const kind =
+            normalizeOrbitalObjectKind(
+              object.object_type
+            );
+
+          counts[kind] += 1;
+        }
+
+
+        return (
+          ORBITAL_OBJECT_KINDS
+            .map(
+              kind => ({
+                kind,
+
+                label:
+                  ORBITAL_OBJECT_VISUALS[
+                    kind
+                  ].label,
+
+                color:
+                  ORBITAL_OBJECT_VISUALS[
+                    kind
+                  ].color,
+
+                count:
+                  counts[kind],
+              })
+            )
+        );
+      },
+
+      [
+        snapshot,
+      ],
+    );
 
 
   useEffect(() => {
@@ -361,54 +633,16 @@ export function OrbitalGlobe({
 
 
       function objectColor(
-        status: string,
+        objectType:
+          string
+          | null
+          | undefined,
       ) {
-        switch (
-          status.toUpperCase()
-        ) {
-          case "FRESH":
-            return Cesium.Color
-              .fromCssColorString(
-                "#56d9ef",
-              );
-
-          case "AGING":
-            return Cesium.Color
-              .fromCssColorString(
-                "#f1c75b",
-              );
-
-          case "STALE":
-            return Cesium.Color
-              .fromCssColorString(
-                "#ef8c55",
-              );
-
-          default:
-            return Cesium.Color
-              .WHITE;
-        }
-      }
-
-
-      function trajectoryColor(
-        objectId: number,
-      ) {
-        const palette = [
-          "#55d6ef",
-          "#f1c75b",
-          "#9b8cff",
-          "#63df9e",
-          "#ef8c55",
-          "#e977c6",
-        ];
-
         return Cesium.Color
           .fromCssColorString(
-            palette[
-              objectId
-              % palette.length
-            ],
+            orbitalObjectColorHex(
+              objectType
+            )
           );
       }
 
@@ -420,7 +654,7 @@ export function OrbitalGlobe({
         ) {
           const color =
             objectColor(
-              object.ephemeris_status,
+              object.object_type,
             );
 
 
@@ -568,7 +802,9 @@ export function OrbitalGlobe({
       }
 
 
-      function clearSelection() {
+      function clearSelection(
+        resetIsolation = true,
+      ) {
         for (
           const objectId
           of selectedIdsRef.current
@@ -609,6 +845,13 @@ export function OrbitalGlobe({
         setTrajectoryError(
           null,
         );
+
+
+        if (resetIsolation) {
+          setIsolateSelection(
+            false
+          );
+        }
       }
 
 
@@ -629,6 +872,16 @@ export function OrbitalGlobe({
           .delete(
             objectId
           );
+
+
+        if (
+          selectedIdsRef.current.size
+          === 0
+        ) {
+          setIsolateSelection(
+            false
+          );
+        }
 
 
         setVisualSelection(
@@ -699,6 +952,175 @@ export function OrbitalGlobe({
 
 
         syncSelectedState();
+      }
+
+
+      async function loadStaticTrajectory(
+        objectId: number,
+      ) {
+        if (!snapshot) {
+          return;
+        }
+
+
+        setLoadingIds(
+          current =>
+            current.includes(
+              objectId
+            )
+              ? current
+              : [
+                  ...current,
+                  objectId,
+                ]
+        );
+
+        setTrajectoryError(
+          null
+        );
+
+
+        try {
+          const center =
+            new Date(
+              snapshot.at
+            );
+
+
+          if (
+            Number.isNaN(
+              center.getTime()
+            )
+          ) {
+            throw new Error(
+              "Invalid snapshot time"
+            );
+          }
+
+
+          const start =
+            new Date(
+              center.getTime()
+              - 45
+              * 60
+              * 1000
+            );
+
+          const end =
+            new Date(
+              center.getTime()
+              + 45
+              * 60
+              * 1000
+            );
+
+
+          const params =
+            new URLSearchParams({
+              start:
+                start.toISOString(),
+
+              end:
+                end.toISOString(),
+
+              step_seconds:
+                "60",
+            });
+
+
+          const response =
+            await fetch(
+              `/api/visualization/objects/${objectId}/trajectory?${params}`,
+              {
+                cache:
+                  "no-store",
+              },
+            );
+
+
+          if (!response.ok) {
+            throw new Error(
+              `Trajectory request failed (${response.status})`
+            );
+          }
+
+
+          const trajectory =
+            (
+              await response.json()
+            ) as ObjectTrajectory;
+
+
+          if (
+            !selectedIdsRef.current
+              .has(
+                objectId
+              )
+          ) {
+            return;
+          }
+
+
+          const positions =
+            trajectory.points.map(
+              point =>
+                Cesium
+                  .Cartesian3
+                  .fromElements(
+                    point.x_m,
+                    point.y_m,
+                    point.z_m,
+                  )
+            );
+
+
+          viewer.entities.removeById(
+            `trajectory-${objectId}`,
+          );
+
+
+          viewer.entities.add({
+            id:
+              `trajectory-${objectId}`,
+
+            show:
+              layersRef.current
+                .trajectories,
+
+            polyline: {
+              positions,
+
+              width:
+                2.2,
+
+              material:
+                Cesium.Color
+                  .fromCssColorString(
+                    "#55d6ef"
+                  )
+                  .withAlpha(
+                    0.84
+                  ),
+            },
+          });
+
+        } catch (error) {
+          setTrajectoryError(
+            error
+            instanceof Error
+              ? error.message
+              : "Trajectory loading failed"
+          );
+
+        } finally {
+          setLoadingIds(
+            current =>
+              current.filter(
+                id =>
+                  id !== objectId
+              )
+          );
+        }
       }
 
 
@@ -797,7 +1219,9 @@ export function OrbitalGlobe({
 
 
         if (!additive) {
-          clearSelection();
+          clearSelection(
+            false
+          );
         }
 
 
@@ -822,6 +1246,9 @@ export function OrbitalGlobe({
           syncSelectedState();
 
 
+          void loadStaticTrajectory(
+            objectId
+          );
         }
 
 
@@ -1026,10 +1453,184 @@ export function OrbitalGlobe({
       }
 
 
+      function publishCatalog() {
+        window.dispatchEvent(
+          new CustomEvent(
+            "orbitalai:catalog-available",
+            {
+              detail: {
+                objects:
+                  snapshot?.objects
+                  ?? [],
+              },
+            },
+          ),
+        );
+      }
+
+
+      function handleCatalogRequest() {
+        publishCatalog();
+      }
+
+
+      function handleSelectObjectRequest(
+        event: Event,
+      ) {
+        const customEvent =
+          event as CustomEvent<{
+            objectId:
+              number;
+
+            additive?:
+              boolean;
+          }>;
+
+
+        const objectId =
+          customEvent.detail
+            ?.objectId;
+
+
+        if (
+          !Number.isInteger(
+            objectId
+          )
+        ) {
+          return;
+        }
+
+
+        void selectObject(
+          objectId,
+          Boolean(
+            customEvent.detail
+              ?.additive
+          ),
+        );
+      }
+
+
+      function handleSelectConjunctionPairRequest(
+        event: Event,
+      ) {
+        const customEvent =
+          event as CustomEvent<{
+            primaryObjectId:
+              number;
+
+            secondaryObjectId:
+              number;
+          }>;
+
+
+        const primaryObjectId =
+          customEvent.detail
+            ?.primaryObjectId;
+
+        const secondaryObjectId =
+          customEvent.detail
+            ?.secondaryObjectId;
+
+
+        if (
+          !Number.isInteger(
+            primaryObjectId
+          )
+          || !Number.isInteger(
+            secondaryObjectId
+          )
+          || primaryObjectId
+            === secondaryObjectId
+        ) {
+          return;
+        }
+
+
+        const primaryEntity =
+          viewer.entities.getById(
+            `orbital-object-${primaryObjectId}`
+          );
+
+        const secondaryEntity =
+          viewer.entities.getById(
+            `orbital-object-${secondaryObjectId}`
+          );
+
+
+        if (
+          !primaryEntity
+          || !secondaryEntity
+        ) {
+          return;
+        }
+
+
+        clearSelection(
+          false
+        );
+
+
+        selectedIdsRef.current =
+          new Set([
+            primaryObjectId,
+            secondaryObjectId,
+          ]);
+
+
+        setVisualSelection(
+          primaryObjectId,
+          true,
+        );
+
+        setVisualSelection(
+          secondaryObjectId,
+          true,
+        );
+
+
+        activeObjectIdRef.current =
+          primaryObjectId;
+
+        setActiveObjectId(
+          primaryObjectId
+        );
+
+        viewer.selectedEntity =
+          primaryEntity;
+
+
+        syncSelectedState();
+
+
+        setIsolateSelection(
+          true
+        );
+      }
+
+
+      window.addEventListener(
+        "orbitalai:catalog-request",
+        handleCatalogRequest,
+      );
+
+      window.addEventListener(
+        "orbitalai:select-object",
+        handleSelectObjectRequest,
+      );
+
+      window.addEventListener(
+        "orbitalai:select-conjunction-pair",
+        handleSelectConjunctionPairRequest,
+      );
+
       window.addEventListener(
         "keydown",
         handleKeyDown,
       );
+
+
+      publishCatalog();
 
 
       if (!disposed) {
@@ -1040,6 +1641,21 @@ export function OrbitalGlobe({
 
 
       return () => {
+        window.removeEventListener(
+          "orbitalai:catalog-request",
+          handleCatalogRequest,
+        );
+
+        window.removeEventListener(
+          "orbitalai:select-object",
+          handleSelectObjectRequest,
+        );
+
+        window.removeEventListener(
+          "orbitalai:select-conjunction-pair",
+          handleSelectConjunctionPairRequest,
+        );
+
         window.removeEventListener(
           "keydown",
           handleKeyDown,
@@ -1132,11 +1748,30 @@ export function OrbitalGlobe({
               "orbital-object-"
             )
           ) {
+            const objectId =
+              Number(
+                entity.id.replace(
+                  "orbital-object-",
+                  "",
+                )
+              );
+
+
+            const objectVisible =
+              layers.objects
+              && (
+                !isolateSelection
+                || selectedIds.includes(
+                  objectId
+                )
+              );
+
+
             if (entity.point) {
               entity.point.show =
                 new Cesium
                   .ConstantProperty(
-                    layers.objects
+                    objectVisible
                   );
             }
 
@@ -1146,6 +1781,7 @@ export function OrbitalGlobe({
                 new Cesium
                   .ConstantProperty(
                     layers.labels
+                    && objectVisible
                   );
             }
 
@@ -1188,8 +1824,10 @@ export function OrbitalGlobe({
     );
 
   }, [
+    isolateSelection,
     layers,
     ready,
+    selectedIds,
   ]);
 
 
@@ -1287,8 +1925,9 @@ export function OrbitalGlobe({
 
 
     /*
-     * Keep a stable non-null Viewer
-     * reference for the async closure.
+     * Imagery and terrain are purely visual.
+     * Authoritative orbital positions continue
+     * to come from the backend.
      */
     const activeViewer =
       viewer;
@@ -1298,60 +1937,10 @@ export function OrbitalGlobe({
       false;
 
 
-    async function applyImagery() {
-      const Cesium =
-        await import(
-          "cesium"
-        );
-
-
-      if (
-        cancelled
-        || activeViewer
-          .isDestroyed()
-      ) {
-        return;
-      }
-
-
-      activeViewer
-        .imageryLayers
-        .removeAll();
-
-
-      if (
-        imageryMode
-        === "local"
-      ) {
-        const provider =
-          await Cesium
-            .TileMapServiceImageryProvider
-            .fromUrl(
-              Cesium.buildModuleUrl(
-                "Assets/Textures/NaturalEarthII"
-              )
-            );
-
-
-        if (
-          cancelled
-          || activeViewer
-            .isDestroyed()
-        ) {
-          return;
-        }
-
-
-        activeViewer
-          .imageryLayers
-          .addImageryProvider(
-            provider
-          );
-
-        return;
-      }
-
-
+    async function addNasaSatellite(
+      Cesium:
+        typeof import("cesium"),
+    ) {
       const provider =
         new Cesium
           .WebMapServiceImageryProvider({
@@ -1394,7 +1983,816 @@ export function OrbitalGlobe({
     }
 
 
+    async function applyImagery() {
+      const Cesium =
+        await import(
+          "cesium"
+        );
+
+
+      if (
+        cancelled
+        || activeViewer
+          .isDestroyed()
+      ) {
+        return;
+      }
+
+
+      activeViewer
+        .imageryLayers
+        .removeAll();
+
+
+      /*
+       * Every non-HIGH-RES mode intentionally
+       * returns to the local ellipsoid terrain.
+       *
+       * This also guarantees that LOCAL stays
+       * independent from Cesium ion.
+       */
+      activeViewer
+        .terrainProvider =
+          new Cesium
+            .EllipsoidTerrainProvider();
+
+
+      const globe =
+        activeViewer
+          .scene
+          .globe;
+
+
+      /*
+       * Conservative rendering defaults.
+       * HIGH RES overrides these below.
+       */
+      activeViewer
+        .useBrowserRecommendedResolution =
+          true;
+
+      activeViewer
+        .resolutionScale =
+          1.0;
+
+
+      if (
+        activeViewer
+          .scene
+          .msaaSupported
+      ) {
+        activeViewer
+          .scene
+          .msaaSamples =
+            2;
+      }
+
+
+      globe.maximumScreenSpaceError =
+        2.0;
+
+      globe.tileCacheSize =
+        100;
+
+
+      globe.enableLighting =
+        false;
+
+      globe.dynamicAtmosphereLighting =
+        false;
+
+      globe.dynamicAtmosphereLightingFromSun =
+        false;
+
+
+      if (
+        imageryMode
+        === "local"
+      ) {
+        const provider =
+          await Cesium
+            .TileMapServiceImageryProvider
+            .fromUrl(
+              Cesium.buildModuleUrl(
+                "Assets/Textures/NaturalEarthII"
+              )
+            );
+
+
+        if (
+          cancelled
+          || activeViewer
+            .isDestroyed()
+        ) {
+          return;
+        }
+
+
+        activeViewer
+          .imageryLayers
+          .addImageryProvider(
+            provider
+          );
+
+        return;
+      }
+
+
+      if (
+        imageryMode
+        === "highres"
+      ) {
+        const token =
+          process.env
+            .NEXT_PUBLIC_CESIUM_ION_TOKEN
+            ?.trim();
+
+
+        if (!token) {
+          console.warn(
+            "Cesium ion token missing; "
+            + "falling back to NASA imagery."
+          );
+
+          await addNasaSatellite(
+            Cesium
+          );
+
+          return;
+        }
+
+
+        Cesium.Ion
+          .defaultAccessToken =
+            token;
+
+
+        /*
+         * HIGH RES profile:
+         *
+         * - render using the real device pixel ratio;
+         * - keep native resolutionScale;
+         * - refine terrain earlier;
+         * - retain more terrain tiles for smoother
+         *   orbital camera movement.
+         */
+        activeViewer
+          .useBrowserRecommendedResolution =
+            false;
+
+        activeViewer
+          .resolutionScale =
+            1.0;
+
+        globe.maximumScreenSpaceError =
+          1.5;
+
+        globe.tileCacheSize =
+          128;
+
+
+        try {
+          const [
+            imageryProvider,
+            terrainProvider,
+          ] =
+            await Promise.all([
+              Cesium
+                .createWorldImageryAsync({
+                  style:
+                    Cesium
+                      .IonWorldImageryStyle
+                      .AERIAL,
+                }),
+
+              Cesium
+                .createWorldTerrainAsync({
+                  requestVertexNormals:
+                    true,
+
+                  requestWaterMask:
+                    true,
+                }),
+            ]);
+
+
+          if (
+            cancelled
+            || activeViewer
+              .isDestroyed()
+          ) {
+            return;
+          }
+
+
+          activeViewer
+            .imageryLayers
+            .addImageryProvider(
+              imageryProvider
+            );
+
+
+          activeViewer
+            .terrainProvider =
+              terrainProvider;
+
+
+
+          /*
+           * CITY LIGHTS
+           *
+           * Do NOT implement these as an ImageryLayer.
+           * World Terrain uses vertex lighting, which
+           * applies solar shading after imagery
+           * compositing and would darken the night
+           * texture itself.
+           *
+           * Instead render a thin, unlit emissive
+           * shell slightly above the ellipsoid.
+           */
+          const previousCityLightsPrimitive =
+            cityLightsPrimitiveRef.current;
+
+          if (
+            previousCityLightsPrimitive
+            && !previousCityLightsPrimitive
+              .isDestroyed()
+          ) {
+            activeViewer
+              .scene
+              .primitives
+              .remove(
+                previousCityLightsPrimitive
+              );
+          }
+
+
+          const cityLightsMaterial =
+            new Cesium.Material({
+              fabric: {
+                type:
+                  "OrbitalAiCityLights",
+
+                uniforms: {
+                  image:
+                    "/earth/black-marble-2016-3km.jpg",
+
+                  intensity:
+                    2.2,
+
+                  opacity:
+                    0.92,
+                },
+
+                source: `
+                  czm_material czm_getMaterial(
+                    czm_materialInput materialInput
+                  )
+                  {
+                    czm_material material =
+                      czm_getDefaultMaterial(
+                        materialInput
+                      );
+
+                    vec4 nightTexture =
+                      texture(
+                        image,
+                        materialInput.st
+                      );
+
+                    /*
+                     * Positive sunDot = illuminated.
+                     * Negative sunDot = night.
+                     *
+                     * This mask therefore follows the
+                     * real Sun directly instead of
+                     * Cesium ImageryLayer day/night
+                     * alpha handling.
+                     */
+                    float sunDot =
+                      dot(
+                        normalize(
+                          materialInput.normalEC
+                        ),
+                        normalize(
+                          czm_sunDirectionEC
+                        )
+                      );
+
+                    float nightMask =
+                      1.0
+                      - smoothstep(
+                          -0.08,
+                          0.12,
+                          sunDot
+                        );
+
+                    /*
+                     * Suppress Black Marble's dark
+                     * land/ocean background and retain
+                     * predominantly artificial lights.
+                     */
+                    float luminance =
+                      dot(
+                        nightTexture.rgb,
+                        vec3(
+                          0.2126,
+                          0.7152,
+                          0.0722
+                        )
+                      );
+
+                    float lightMask =
+                      smoothstep(
+                        0.055,
+                        0.24,
+                        luminance
+                      );
+
+                    float alpha =
+                      nightMask
+                      * lightMask
+                      * opacity;
+
+                    /*
+                     * Emission is intentionally used:
+                     * city lights must remain bright
+                     * when the solar-lit globe beneath
+                     * them is dark.
+                     */
+                    material.diffuse =
+                      vec3(0.0);
+
+                    material.emission =
+                      nightTexture.rgb
+                      * intensity
+                      * nightMask;
+
+                    material.alpha =
+                      alpha;
+
+                    return material;
+                  }
+                `,
+              },
+            });
+
+
+          const cityLightsGeometry =
+            new Cesium.RectangleGeometry({
+              rectangle:
+                Cesium.Rectangle.MAX_VALUE,
+
+              ellipsoid:
+                Cesium.Ellipsoid.WGS84,
+
+              /*
+               * Small separation prevents z-fighting.
+               * At orbital viewing distances this is
+               * visually negligible.
+               */
+              height:
+                2_500,
+
+              vertexFormat:
+                Cesium
+                  .EllipsoidSurfaceAppearance
+                  .VERTEX_FORMAT,
+            });
+
+
+          const cityLightsPrimitive =
+            new Cesium.Primitive({
+              geometryInstances:
+                new Cesium.GeometryInstance({
+                  geometry:
+                    cityLightsGeometry,
+                }),
+
+              appearance:
+                new Cesium
+                  .EllipsoidSurfaceAppearance({
+                    material:
+                      cityLightsMaterial,
+
+                    /*
+                     * Critical:
+                     * no solar lighting is applied to
+                     * this shell after the material.
+                     */
+                    flat:
+                      true,
+
+                    translucent:
+                      true,
+
+                    aboveGround:
+                      true,
+                  }),
+
+              asynchronous:
+                false,
+            });
+
+
+          activeViewer
+            .scene
+            .primitives
+            .add(
+              cityLightsPrimitive
+            );
+
+          cityLightsPrimitiveRef.current =
+            cityLightsPrimitive;
+
+
+          globe.enableLighting =
+            true;
+
+          globe.dynamicAtmosphereLighting =
+            true;
+
+          globe.dynamicAtmosphereLightingFromSun =
+            true;
+
+          globe.showGroundAtmosphere =
+            true;
+
+
+          return;
+
+        } catch (error) {
+          console.error(
+            "HIGH RES Earth failed; "
+            + "falling back to NASA imagery.",
+            error,
+          );
+
+
+          if (
+            cancelled
+            || activeViewer
+              .isDestroyed()
+          ) {
+            return;
+          }
+
+
+          await addNasaSatellite(
+            Cesium
+          );
+
+          return;
+        }
+      }
+
+
+      await addNasaSatellite(
+        Cesium
+      );
+    }
+
+
     void applyImagery();
+
+
+    return () => {
+      cancelled =
+        true;
+    };
+
+  }, [
+    imageryMode,
+    ready,
+  ]);
+
+
+  /*
+   * Space environment and solar illumination.
+   *
+   * This layer is visualization-only:
+   * - the Earth skybox is bundled with Cesium;
+   * - atmosphere is GPU-rendered;
+   * - the day/night terminator follows the Cesium clock;
+   * - no orbital mechanics are performed in the browser.
+   *
+   * Keep per-fragment atmosphere disabled because the
+   * workstation GPU is also reserved for local LLM inference.
+   */
+  useEffect(() => {
+    const viewer =
+      viewerRef.current;
+
+
+    if (
+      !ready
+      || viewer === null
+      || viewer.isDestroyed()
+    ) {
+      return;
+    }
+
+
+    let cancelled =
+      false;
+
+
+    void import(
+      "cesium"
+    ).then(
+      Cesium => {
+        if (
+          cancelled
+          || viewer.isDestroyed()
+        ) {
+          return;
+        }
+
+
+        const scene =
+          viewer.scene;
+
+        const globe =
+          scene.globe;
+
+
+        /*
+         * Ensure the native Cesium Earth star map
+         * is available. No remote imagery service
+         * is required for the stars.
+         */
+        if (!scene.skyBox) {
+          scene.skyBox =
+            Cesium
+              .SkyBox
+              .createEarthSkyBox();
+        }
+
+
+        scene.skyBox.show =
+          true;
+
+
+        /*
+         * Ensure the atmospheric limb exists.
+         */
+        if (!scene.skyAtmosphere) {
+          scene.skyAtmosphere =
+            new Cesium
+              .SkyAtmosphere(
+                Cesium
+                  .Ellipsoid
+                  .WGS84
+              );
+        }
+
+
+        const atmosphere =
+          scene.skyAtmosphere;
+
+
+        atmosphere.show =
+          true;
+
+
+        /*
+         * Per-fragment atmosphere looks slightly
+         * better but adds GPU work every frame.
+         *
+         * Leave it disabled for the shared
+         * Cesium + llama.cpp GPU configuration.
+         */
+        atmosphere
+          .perFragmentAtmosphere =
+            false;
+
+
+        /*
+         * Do not enable terrain shadow-map passes.
+         * The day/night terminator does not require
+         * them and this saves GPU work and VRAM.
+         */
+        globe.shadows =
+          Cesium
+            .ShadowMode
+            .DISABLED;
+
+
+        if (
+          imageryMode
+          === "highres"
+        ) {
+          /*
+           * Slightly darker atmosphere makes the
+           * orbital view less washed-out and lets
+           * the star field remain visible.
+           */
+          atmosphere
+            .brightnessShift =
+              -0.08;
+
+          atmosphere
+            .saturationShift =
+              0.05;
+
+          atmosphere
+            .hueShift =
+              0.0;
+
+          atmosphere
+            .atmosphereLightIntensity =
+              48.0;
+
+
+          /*
+           * Real solar illumination.
+           *
+           * Because the light direction comes from
+           * the Sun and Cesium's clock, the visible
+           * day/night terminator moves naturally
+           * with playback time.
+           */
+          /*
+           * Solar illumination profile for the
+           * orbital operations view.
+           *
+           * Cesium derives the Sun direction from
+           * viewer.clock.currentTime, so playback
+           * and conjunction TCA remain temporally
+           * consistent with the visual terminator.
+           */
+          globe.enableLighting =
+            true;
+
+          globe
+            .dynamicAtmosphereLighting =
+              true;
+
+          globe
+            .dynamicAtmosphereLightingFromSun =
+              true;
+
+          globe
+            .showGroundAtmosphere =
+              true;
+
+
+          /*
+           * Keep the day side natural while making
+           * the night hemisphere clearly readable
+           * from orbital camera distances.
+           */
+          const earthRadius =
+            globe
+              .ellipsoid
+              .minimumRadius;
+
+          /*
+           * Cesium-native solar lighting distances.
+           *
+           * Preserve a visible terminator while
+           * avoiding an unnaturally crushed
+           * night hemisphere.
+           */
+          globe
+            .lightingFadeOutDistance =
+              Math.PI
+              * earthRadius
+              * 0.5;
+
+          globe
+            .lightingFadeInDistance =
+              Math.PI
+              * earthRadius;
+
+          globe
+            .nightFadeOutDistance =
+              Math.PI
+              * earthRadius
+              * 0.5;
+
+          globe
+            .nightFadeInDistance =
+              Math.PI
+              * earthRadius
+              * 2.5;
+
+
+          globe
+            .atmosphereBrightnessShift =
+              0.0;
+
+          globe
+            .atmosphereSaturationShift =
+              0.0;
+
+          globe
+            .lambertDiffuseMultiplier =
+              0.9;
+
+          /*
+           * Slightly soften terrain vertex
+           * shadows without removing the
+           * day/night distinction.
+           */
+          globe
+            .vertexShadowDarkness =
+              0.18;
+
+
+          /*
+           * Sun and Moon are cheap native Cesium
+           * scene primitives and require no custom
+           * textures or post-processing passes.
+           */
+          if (
+            viewer
+              .scene
+              .sun
+          ) {
+            viewer
+              .scene
+              .sun
+              .show =
+                true;
+          }
+
+          if (
+            viewer
+              .scene
+              .moon
+          ) {
+            viewer
+              .scene
+              .moon
+              .show =
+                true;
+          }
+
+
+        } else {
+          /*
+           * City lights belong only to the high-res
+           * orbital rendering mode.
+           */
+          const cityLightsPrimitive =
+            cityLightsPrimitiveRef.current;
+
+          if (
+            cityLightsPrimitive
+            && !cityLightsPrimitive
+              .isDestroyed()
+          ) {
+            viewer
+              .scene
+              .primitives
+              .remove(
+                cityLightsPrimitive
+              );
+          }
+
+          cityLightsPrimitiveRef.current =
+            null;
+
+
+          /*
+           * Keep the existing NASA/local modes
+           * visually neutral.
+           */
+          atmosphere
+            .brightnessShift =
+              0.0;
+
+          atmosphere
+            .saturationShift =
+              0.0;
+
+          atmosphere
+            .hueShift =
+              0.0;
+
+          atmosphere
+            .atmosphereLightIntensity =
+              50.0;
+
+
+          globe.enableLighting =
+            false;
+
+          globe
+            .dynamicAtmosphereLighting =
+              false;
+
+          globe
+            .dynamicAtmosphereLightingFromSun =
+              false;
+
+          globe
+            .atmosphereBrightnessShift =
+              0.0;
+        }
+      }
+    );
 
 
     return () => {
@@ -1438,6 +2836,9 @@ export function OrbitalGlobe({
       (() => void)
       | undefined;
 
+    const temporaryPlaybackEntityIds:
+      number[] = [];
+
 
     void import(
       "cesium"
@@ -1451,20 +2852,19 @@ export function OrbitalGlobe({
         }
 
 
+        const materializedObjectIds:
+          number[] = [];
+
+
         for (
           const object
           of playback.objects
         ) {
-          const entity =
+          let entity =
             viewer.entities
               .getById(
                 `orbital-object-${object.object_id}`
               );
-
-
-          if (!entity) {
-            continue;
-          }
 
 
           const position =
@@ -1496,9 +2896,9 @@ export function OrbitalGlobe({
 
           /*
            * Linear interpolation is
-           * intentionally used here.
-           * This is visualization only,
-           * never an orbital calculation.
+           * visualization-only.
+           * Authoritative orbital positions
+           * originate from the backend.
            */
           position
             .setInterpolationOptions({
@@ -1511,9 +2911,143 @@ export function OrbitalGlobe({
             });
 
 
-          entity.position =
-            position;
+          /*
+           * A conjunction can reference an
+           * object that is not renderable in
+           * the current-time snapshot.
+           *
+           * Targeted playback is authoritative
+           * for the requested TCA window, so
+           * materialize a temporary Cesium
+           * entity when the snapshot entity
+           * does not exist.
+           */
+          if (!entity) {
+            entity =
+              viewer.entities.add({
+                id:
+                  `orbital-object-${object.object_id}`,
+
+                name:
+                  object.object_name,
+
+                position,
+
+                point: {
+                  show:
+                    layersRef.current
+                      .objects,
+
+                  pixelSize:
+                    8,
+
+                  color:
+                    Cesium.Color
+                      .fromCssColorString(
+                        orbitalObjectColorHex(
+                          object
+                            .object_type
+                        )
+                      ),
+
+                  outlineColor:
+                    Cesium.Color
+                      .BLACK,
+
+                  outlineWidth:
+                    1,
+
+                  scaleByDistance:
+                    new Cesium
+                      .NearFarScalar(
+                        1_000_000,
+                        1.35,
+                        50_000_000,
+                        0.85,
+                      ),
+                },
+
+                label: {
+                  show:
+                    layersRef.current
+                      .labels,
+
+                  text:
+                    object.object_name,
+
+                  font:
+                    "10px monospace",
+
+                  fillColor:
+                    Cesium.Color
+                      .WHITE,
+
+                  showBackground:
+                    true,
+
+                  backgroundColor:
+                    Cesium.Color
+                      .BLACK
+                      .withAlpha(
+                        0.55
+                      ),
+
+                  pixelOffset:
+                    new Cesium
+                      .Cartesian2(
+                        9,
+                        -11,
+                      ),
+
+                  distanceDisplayCondition:
+                    new Cesium
+                      .DistanceDisplayCondition(
+                        0,
+                        50_000_000,
+                      ),
+
+                  scaleByDistance:
+                    new Cesium
+                      .NearFarScalar(
+                        2_000_000,
+                        1.0,
+                        50_000_000,
+                        0.65,
+                      ),
+                },
+              });
+
+
+            temporaryPlaybackEntityIds
+              .push(
+                object.object_id
+              );
+
+          } else {
+            entity.position =
+              position;
+          }
+
+
+          materializedObjectIds
+            .push(
+              object.object_id
+            );
         }
+
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "orbitalai:playback-materialized",
+            {
+              detail: {
+                objectIds:
+                  materializedObjectIds,
+              },
+            },
+          ),
+        );
+
 
 
         const start =
@@ -1551,11 +3085,7 @@ export function OrbitalGlobe({
             .ClockStep
             .SYSTEM_CLOCK_MULTIPLIER;
 
-        viewer.clock.multiplier =
-          1;
 
-        viewer.clock.shouldAnimate =
-          false;
 
 
         reportClockTime(
@@ -1632,6 +3162,22 @@ export function OrbitalGlobe({
         true;
 
       removeTickListener?.();
+
+
+      /*
+       * Remove only entities created by
+       * this playback effect. Snapshot
+       * entities remain owned by the
+       * normal globe lifecycle.
+       */
+      for (
+        const objectId
+        of temporaryPlaybackEntityIds
+      ) {
+        viewer.entities.removeById(
+          `orbital-object-${objectId}`
+        );
+      }
     };
 
   }, [
@@ -2531,6 +4077,88 @@ export function OrbitalGlobe({
       />
 
 
+      <div
+        className="orbitalObjectLegend"
+      >
+        <button
+          className="orbitalObjectLegendToggle"
+          type="button"
+          aria-expanded={legendOpen}
+          aria-controls="orbital-object-legend-panel"
+          onClick={() =>
+            setLegendOpen(
+              current => !current
+            )
+          }
+        >
+          <span>
+            OBJECT LEGEND
+          </span>
+
+          <span
+            aria-hidden="true"
+          >
+            {
+              legendOpen
+                ? "−"
+                : "+"
+            }
+          </span>
+        </button>
+
+        {
+          legendOpen
+          && (
+            <div
+              id="orbital-object-legend-panel"
+              className="orbitalObjectLegendPanel"
+              aria-label="Orbital object legend"
+            >
+              <div
+                className="orbitalObjectLegendTitle"
+              >
+                ORBITAL OBJECTS
+              </div>
+
+              {
+                objectLegend.map(
+                  item => (
+                    <div
+                      className="orbitalObjectLegendRow"
+                      key={item.kind}
+                    >
+                      <span
+                        className="orbitalObjectLegendDot"
+                        style={{
+                          backgroundColor:
+                            item.color,
+                        }}
+                      />
+
+                      <span
+                        className="orbitalObjectLegendLabel"
+                      >
+                        {item.label}
+                      </span>
+
+                      <span
+                        className="orbitalObjectLegendCount"
+                      >
+                        {
+                          item.count
+                            .toLocaleString()
+                        }
+                      </span>
+                    </div>
+                  )
+                )
+              }
+            </div>
+          )
+        }
+      </div>
+
+
       {!ready && (
         <div className="globeLoading">
           <div className="loadingRing" />
@@ -2566,6 +4194,27 @@ export function OrbitalGlobe({
           type="button"
         >
           GLOBAL VIEW
+        </button>
+
+
+        <button
+          disabled={
+            selectedIds.length
+            === 0
+          }
+          onClick={() =>
+            setIsolateSelection(
+              current =>
+                !current
+            )
+          }
+          type="button"
+        >
+          {
+            isolateSelection
+              ? "SHOW ALL OBJECTS"
+              : "ISOLATE SELECTION"
+          }
         </button>
 
 
@@ -2700,6 +4349,67 @@ export function OrbitalGlobe({
 
 
             <div className="inspectorGrid">
+
+
+              <div>
+                <span>
+                  OWNER
+                </span>
+
+                <strong>
+                  {
+                    activeObject
+                      .owner
+                    ?? "UNKNOWN"
+                  }
+                </strong>
+              </div>
+
+
+              <div>
+                <span>
+                  OPERATIONAL STATUS
+                </span>
+
+                <strong>
+                  {
+                    formatOperationalStatus(
+                      activeObject
+                        .ops_status_code
+                    )
+                  }
+                </strong>
+              </div>
+
+
+              <div>
+                <span>
+                  LAUNCH DATE
+                </span>
+
+                <strong>
+                  {
+                    activeObject
+                      .launch_date
+                    ?? "UNKNOWN"
+                  }
+                </strong>
+              </div>
+
+
+              <div>
+                <span>
+                  LAUNCH SITE
+                </span>
+
+                <strong>
+                  {
+                    activeObject
+                      .launch_site
+                    ?? "UNKNOWN"
+                  }
+                </strong>
+              </div>
 
               <div>
                 <span>

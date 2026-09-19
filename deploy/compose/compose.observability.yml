@@ -74,7 +74,7 @@ services:
       - orbitalai-grafana:/var/lib/grafana
       - ../../observability/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "127.0.0.1:3001:3000"
+      - "3001:3000"
     networks:
       - observability
     depends_on:
