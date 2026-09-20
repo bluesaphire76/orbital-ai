@@ -20,6 +20,8 @@ The v0.4 work introduces the Orbital Operations Workspace, including:
 - high-resolution Earth imagery and terrain;
 - solar day/night illumination;
 - local NASA Black Marble night-light rendering.
+- automated SATCAT, CelesTrak and Space-Track synchronization;
+- catalog synchronization status, freshness and observability.
 
 The previous stable release is **v0.3.0**.
 
@@ -120,6 +122,21 @@ External services are used as orbital-data sources and, where configured, for hi
 - historical orbital elements;
 - canonical ephemeris selection;
 - freshness and stale-element controls.
+
+### Automated Catalog & Ephemeris Synchronization
+
+The v0.4F.1 capability, implemented on the current feature branch, adds:
+
+- the `catalog-sync` scheduler service;
+- canonical SATCAT → CelesTrak `ACTIVE` → Space-Track ordering;
+- independent 12-hour, 2-hour and 1-hour default cadences;
+- per-source retry/backoff and a shared filesystem lock;
+- `GET /catalog/sync-status` with last-success freshness;
+- Prometheus metrics, Grafana panels and the Catalog Synchronization health UI.
+
+Cadence, retry and provider settings use the `ORBITAL_CATALOG_SYNC_*`
+variables in `.env.example`. Operational details are documented in
+[v0.4F.1 — Automated Catalog & Ephemeris Synchronization](docs/architecture/v0.4f1-automated-catalog-ephemeris-synchronization.md).
 
 ### Propagation
 
@@ -298,11 +315,10 @@ Frontend production build:
 npm run build
 ```
 
-## Current v0.4 hardening roadmap
+## Current v0.4F.1 development status
 
-The next development activity is **Automated Catalog & Ephemeris Synchronization**.
-
-Planned scope:
+**Automated Catalog & Ephemeris Synchronization** is implemented on the
+`feature/v0.4.0-automated-catalog-sync` branch. Its scope includes:
 
 - automated SATCAT synchronization;
 - automated CelesTrak synchronization;
@@ -315,11 +331,15 @@ Planned scope:
 - API synchronization-status endpoint;
 - freshness visibility in the operations UI.
 
-Target default cadences:
+Default cadences:
 
 - Space-Track: approximately every **1 hour**;
 - CelesTrak: approximately every **2 hours**;
 - SATCAT: approximately every **12 hours**.
+
+The scheduler runs as the Compose `catalog-sync` service. Operational state is
+available from `GET /catalog/sync-status`; Prometheus and the **Orbital
+Operations Overview** dashboard expose bounded synchronization telemetry.
 
 ## Documentation
 
@@ -333,6 +353,12 @@ The v0.4 Orbital Operations Workspace is documented in:
 
 ```text
 docs/architecture/v0.4-orbital-operations-workspace.md
+```
+
+Automated catalog and ephemeris synchronization is documented in:
+
+```text
+docs/architecture/v0.4f1-automated-catalog-ephemeris-synchronization.md
 ```
 
 ## Project direction

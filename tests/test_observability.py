@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import re
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
@@ -215,7 +216,172 @@ def test_dashboard_is_provisioned_with_bounded_operational_queries():
     root = Path(__file__).resolve().parents[1]
     dashboard = json.loads((root / "observability/grafana/provisioning/dashboards/json/orbital-operations-overview.json").read_text())
     assert dashboard["title"] == "OrbitalAI - Orbital Operations Overview"
-    assert 12 <= len(dashboard["panels"]) <= 18
+    assert dashboard["uid"] == "orbitalai-operations"
     assert dashboard["refresh"] == "30s"
-    assert all(p["datasource"]["uid"] == "orbitalai-prometheus" for p in dashboard["panels"])
+    data_panels = [
+        panel
+        for panel in dashboard["panels"]
+        if panel["type"] != "row"
+    ]
+    assert all(
+        panel["datasource"]["uid"] == "orbitalai-prometheus"
+        for panel in data_panels
+    )
+    panel_ids = [panel["id"] for panel in dashboard["panels"]]
+    assert len(panel_ids) == len(set(panel_ids))
+    assert panel_ids == [
+        24, 1, 2, 3, 4, 5,
+        25, 7, 8,
+        26, 9, 10, 11, 6, 12, 13, 14,
+        27, 15, 16,
+        28, 18, 19, 20, 21, 22, 23,
+        29, 17,
+    ]
+
+    section_rows = [
+        panel
+        for panel in dashboard["panels"]
+        if panel["type"] == "row"
+    ]
+    assert [panel["title"] for panel in section_rows] == [
+        "System Overview",
+        "Catalog & Ephemeris",
+        "Conjunction Screening",
+        "Ingestion",
+        "Automated Catalog Synchronization",
+        "Alerting",
+    ]
+    assert all(
+        panel["gridPos"]["x"] == 0
+        and panel["gridPos"]["w"] == 24
+        and panel["gridPos"]["h"] == 1
+        and panel["collapsed"] is False
+        for panel in section_rows
+    )
+
+    expected_grid = {
+        1: (0, 1, 8, 4), 2: (8, 1, 4, 4), 3: (12, 1, 4, 4),
+        4: (16, 1, 4, 4), 5: (20, 1, 4, 4),
+        7: (0, 6, 12, 7), 8: (12, 6, 12, 7),
+        9: (0, 14, 8, 6), 10: (8, 14, 4, 6),
+        11: (12, 14, 8, 6), 6: (20, 14, 4, 6),
+        12: (0, 20, 8, 7), 13: (8, 20, 8, 7), 14: (16, 20, 8, 7),
+        15: (0, 28, 8, 7), 16: (8, 28, 16, 7),
+        18: (0, 36, 6, 5), 19: (6, 36, 6, 5),
+        20: (12, 36, 6, 5), 21: (18, 36, 6, 5),
+        22: (0, 41, 12, 5), 23: (12, 41, 12, 5),
+        17: (0, 47, 24, 4),
+    }
+    assert {
+        panel["id"]: (
+            panel["gridPos"]["x"], panel["gridPos"]["y"],
+            panel["gridPos"]["w"], panel["gridPos"]["h"],
+        )
+        for panel in data_panels
+    } == expected_grid
+
+    stat_panels = [panel for panel in data_panels if panel["type"] == "stat"]
+    assert all(
+        panel["options"]["justifyMode"] == "center"
+        and panel["options"]["orientation"] == "horizontal"
+        and panel["options"]["wideLayout"] is True
+        and panel["options"]["text"] == {
+            "titleSize": 12,
+            "valueSize": 20,
+        }
+        for panel in stat_panels
+    )
+
+    bar_gauges = [
+        panel
+        for panel in data_panels
+        if panel["type"] == "bargauge"
+    ]
+    assert all(
+        panel["options"]["namePlacement"] == "left"
+        and panel["options"]["sizing"] == "manual"
+        and panel["options"]["minVizHeight"] == 24
+        and panel["options"]["maxVizHeight"] == 32
+        and panel["options"]["text"] == {
+            "titleSize": 12,
+            "valueSize": 18,
+        }
+        for panel in bar_gauges
+    )
+
+    original_panels = {
+        1: "Platform and worker status",
+        2: "Eligible objects",
+        3: "Last screening duration",
+        4: "Conjunction events",
+        5: "Propagation failures",
+        6: "Chunk count",
+        7: "Catalog coverage",
+        8: "Earth-orbit ephemeris age",
+        9: "Conjunction pipeline reduction",
+        10: "Duplicate events suppressed",
+        11: "Largest chunk workload",
+        12: "Pipeline ratios",
+        13: "Screening performance",
+        14: "Execution counts in selected range",
+        15: "Ingestion — time since successful sync",
+        16: "Ingestion — latest records and execution",
+        17: "Firing Alerts",
+    }
+    panels_by_id = {
+        panel["id"]: panel
+        for panel in dashboard["panels"]
+    }
+    assert {
+        panel_id: panels_by_id[panel_id]["title"]
+        for panel_id in original_panels
+    } == original_panels
+
+    catalog_panels = {
+        panel["title"]: panel
+        for panel in dashboard["panels"]
+        if 18 <= panel["id"] <= 23
+    }
+    assert set(catalog_panels) == {
+        "Catalog Synchronization",
+        "Last Successful Sync Age",
+        "Last Execution Status",
+        "Consecutive Failures",
+        "Last Sync Records",
+        "Last Sync Duration",
+    }
+    expressions = {
+        target["expr"]
+        for panel in catalog_panels.values()
+        for target in panel["targets"]
+    }
+    expected_metrics = {
+        "orbitalai_catalog_sync_metrics_available",
+        "orbitalai_catalog_sync_last_success_timestamp_seconds",
+        "orbitalai_catalog_sync_last_execution_success",
+        "orbitalai_catalog_sync_consecutive_failures",
+        "orbitalai_catalog_sync_last_records",
+        "orbitalai_catalog_sync_last_duration_seconds",
+    }
+    referenced_metrics = set(re.findall(
+        r"orbitalai_catalog_sync_[a-z_]+",
+        "\n".join(expressions),
+    ))
+    assert referenced_metrics == expected_metrics
+    assert all(
+        forbidden not in expression
+        for expression in expressions
+        for forbidden in ("pod=", "container=", "instance=", "job=")
+    )
+    assert all(
+        target["datasource"]["uid"] == "orbitalai-prometheus"
+        for panel in catalog_panels.values()
+        for target in panel["targets"]
+    )
+    source_panels = set(catalog_panels) - {"Catalog Synchronization"}
+    assert all(
+        target["legendFormat"] == "{{source}}"
+        for title in source_panels
+        for target in catalog_panels[title]["targets"]
+    )
     assert (root / "observability/grafana/provisioning/dashboards/operations.yml").exists()

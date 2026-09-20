@@ -37,6 +37,10 @@ import {
   ConjunctionAnalyzeButton,
 } from "@/components/conjunction/conjunction-analyze-button";
 
+import {
+  CatalogSyncPanel,
+} from "@/components/catalog/catalog-sync-panel";
+
 import type {
   ConjunctionEvent,
 } from "@/types/conjunction";
@@ -376,6 +380,9 @@ export default async function Home() {
 
                 </div>
               </section>
+
+
+              <CatalogSyncPanel />
 
 
               <section className="workspaceRailSection">
