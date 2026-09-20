@@ -6,6 +6,9 @@ from prometheus_client import (
     REGISTRY,
 )
 
+from backend.app.api.routes.catalog import (
+    router as catalog_router,
+)
 from backend.app.api.routes.conjunctions import (
     router as conjunction_router,
 )
@@ -34,6 +37,10 @@ def create_app(*, metrics_registry=None) -> FastAPI:
 
     app.include_router(
         health_router
+    )
+
+    app.include_router(
+        catalog_router
     )
 
     app.include_router(

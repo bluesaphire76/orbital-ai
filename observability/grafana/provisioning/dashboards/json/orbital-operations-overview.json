@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 4,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -16,6 +16,19 @@
   },
   "editable": false,
   "panels": [
+    {
+      "id": 24,
+      "title": "System Overview",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
     {
       "id": 1,
       "title": "Platform and worker status",
@@ -26,8 +39,8 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 0,
-        "w": 4,
+        "y": 1,
+        "w": 8,
         "h": 4
       },
       "description": "1 = healthy / successful, 0 = failed. Worker value is the last completed execution, not worker liveness. Database check is the existing /ready probe. Metrics refresh is 1 only when every cached collector's latest refresh succeeded.",
@@ -103,8 +116,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -112,7 +125,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -124,8 +142,8 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 4,
-        "y": 0,
+        "x": 8,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -166,8 +184,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -175,7 +193,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -187,8 +210,8 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 8,
-        "y": 0,
+        "x": 12,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -229,8 +252,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -238,7 +261,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -250,8 +278,8 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 12,
-        "y": 0,
+        "x": 16,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -292,8 +320,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -301,7 +329,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -313,8 +346,8 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 16,
-        "y": 0,
+        "x": 20,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -355,8 +388,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -364,71 +397,26 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
-      "id": 6,
-      "title": "Chunk count",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "orbitalai-prometheus"
-      },
+      "id": 25,
+      "title": "Catalog & Ephemeris",
+      "type": "row",
+      "collapsed": false,
       "gridPos": {
-        "x": 20,
-        "y": 0,
-        "w": 4,
-        "h": 4
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
       },
-      "description": "Sequential bounded-memory chunks. Their width is available as orbitalai_conjunction_last_run_chunk_seconds.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "orbitalai_conjunction_last_run_chunk_count",
-          "legendFormat": "Chunks",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "orbitalai-prometheus"
-          },
-          "instant": true,
-          "range": false,
-          "format": "time_series"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "none",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      }
+      "panels": []
     },
     {
       "id": 7,
@@ -440,7 +428,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 7
       },
@@ -524,6 +512,15 @@
           ],
           "fields": "",
           "values": false
+        },
+        "namePlacement": "left",
+        "valueMode": "color",
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 18
         }
       }
     },
@@ -537,7 +534,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 7
       },
@@ -600,6 +597,19 @@
       }
     },
     {
+      "id": 26,
+      "title": "Conjunction Screening",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
       "id": 9,
       "title": "Conjunction pipeline reduction",
       "type": "bargauge",
@@ -609,9 +619,9 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 11,
-        "w": 12,
-        "h": 7
+        "y": 14,
+        "w": 8,
+        "h": 6
       },
       "description": "Chunk-unique counts are summed across chunks; they are not globally unique pairs. Raw counts include the shared overlap sample.",
       "targets": [
@@ -693,6 +703,15 @@
           ],
           "fields": "",
           "values": false
+        },
+        "namePlacement": "left",
+        "valueMode": "color",
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 18
         }
       }
     },
@@ -705,10 +724,10 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 12,
-        "y": 11,
+        "x": 8,
+        "y": 14,
         "w": 4,
-        "h": 7
+        "h": 6
       },
       "description": "Includes ordinary overlap solutions and continuous threshold episodes.",
       "targets": [
@@ -747,8 +766,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -756,7 +775,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -768,10 +792,10 @@
         "uid": "orbitalai-prometheus"
       },
       "gridPos": {
-        "x": 16,
-        "y": 11,
+        "x": 12,
+        "y": 14,
         "w": 8,
-        "h": 7
+        "h": 6
       },
       "description": "",
       "targets": [
@@ -841,6 +865,83 @@
           ],
           "fields": "",
           "values": false
+        },
+        "namePlacement": "left",
+        "valueMode": "color",
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 18
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Chunk count",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 14,
+        "w": 4,
+        "h": 6
+      },
+      "description": "Sequential bounded-memory chunks. Their width is available as orbitalai_conjunction_last_run_chunk_seconds.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_conjunction_last_run_chunk_count",
+          "legendFormat": "Chunks",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
         }
       }
     },
@@ -854,7 +955,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 20,
         "w": 8,
         "h": 7
       },
@@ -950,7 +1051,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 18,
+        "y": 20,
         "w": 8,
         "h": 7
       },
@@ -1034,7 +1135,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 18,
+        "y": 20,
         "w": 8,
         "h": 7
       },
@@ -1087,8 +1188,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1096,8 +1197,26 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
+    },
+    {
+      "id": 27,
+      "title": "Ingestion",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
     },
     {
       "id": 15,
@@ -1109,9 +1228,9 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 28,
         "w": 8,
-        "h": 8
+        "h": 7
       },
       "description": "No data means no successful sync observed since instrumentation was enabled. Historical success times are not invented.",
       "targets": [
@@ -1150,8 +1269,8 @@
       "options": {
         "colorMode": "none",
         "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
+        "justifyMode": "center",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1159,7 +1278,12 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
       }
     },
     {
@@ -1172,9 +1296,9 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 25,
+        "y": 28,
         "w": 16,
-        "h": 8
+        "h": 7
       },
       "description": "Records are from the last successful sync. Duration/outcome refer to the latest completed attempt. Imported means new SATCAT objects or new GP elements. Failure totals start when instrumentation is enabled.",
       "targets": [
@@ -1342,6 +1466,489 @@
       ]
     },
     {
+      "id": 28,
+      "title": "Automated Catalog Synchronization",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 18,
+      "title": "Catalog Synchronization",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 6,
+        "h": 5
+      },
+      "description": "Availability of the cached catalog synchronization telemetry snapshot. This is independent of provider freshness and process liveness.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_sync_metrics_available",
+          "legendFormat": "Telemetry",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Unavailable",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Available",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Last Successful Sync Age",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 36,
+        "w": 6,
+        "h": 5
+      },
+      "description": "Elapsed time since each source last completed successfully. No data means no successful sync has been observed. Authoritative freshness classification remains in the API and health UI because cadence thresholds are configurable.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - (orbitalai_catalog_sync_last_success_timestamp_seconds > 0)",
+          "legendFormat": "{{source}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "decimals": 1,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Last Execution Status",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 6,
+        "h": 5
+      },
+      "description": "Outcome of the latest completed attempt for each source. Unknown means no completed execution has been observed.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_sync_last_execution_success",
+          "legendFormat": "{{source}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Failed",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Success",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "text": "Unknown",
+                  "color": "gray",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "Consecutive Failures",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 36,
+        "w": 6,
+        "h": 5
+      },
+      "description": "Consecutive failed attempts per source. A successful execution resets the value to zero.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_sync_consecutive_failures",
+          "legendFormat": "{{source}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Last Sync Records",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 12,
+        "h": 5
+      },
+      "description": "Records reported by the latest completed catalog synchronization attempt for each source.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_sync_last_records",
+          "legendFormat": "{{source}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "Last Sync Duration",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "orbitalai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 41,
+        "w": 12,
+        "h": 5
+      },
+      "description": "Duration of the latest completed catalog synchronization attempt for each source.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "orbitalai_catalog_sync_last_duration_seconds",
+          "legendFormat": "{{source}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "orbitalai-prometheus"
+          },
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "justifyMode": "center",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
+        }
+      }
+    },
+    {
+      "id": 29,
+      "title": "Alerting",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 46,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
       "id": 17,
       "title": "Firing Alerts",
       "type": "stat",
@@ -1351,8 +1958,8 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 33,
-        "w": 6,
+        "y": 47,
+        "w": 24,
         "h": 4
       },
       "description": "Operational alerts firing in Prometheus. Direct Alertmanager smoke injections are not Prometheus ALERTS series.",
@@ -1401,6 +2008,13 @@
           ],
           "fields": "",
           "values": false
+        },
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "wideLayout": true,
+        "text": {
+          "titleSize": 12,
+          "valueSize": 20
         }
       }
     }
