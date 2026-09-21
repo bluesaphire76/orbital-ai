@@ -155,6 +155,15 @@ variables in `.env.example`. Operational details are documented in
 - duplicate-event suppression;
 - exact event replay using the original orbital-element IDs.
 
+The v0.4F.2 development work adds a dedicated `conjunction-screening`
+Compose scheduler. It evaluates the latest successful canonical run in
+PostgreSQL every 60 seconds, uses a four-hour cadence, and retains the
+validated six-hour horizon and 60-second grid. Manual runs participate in the
+same cadence and share a nonblocking filesystem lock with the scheduler.
+Failures use persisted exponential retry state without replacing the database
+as the source of successful-run history. See
+[v0.4F.2 — Automated Conjunction Screening](docs/architecture/v0.4f2-automated-conjunction-screening.md).
+
 Probability of collision is not currently calculated because covariance data is not yet part of the authoritative pipeline.
 
 ### Orbital Operations Workspace
@@ -359,6 +368,12 @@ Automated catalog and ephemeris synchronization is documented in:
 
 ```text
 docs/architecture/v0.4f1-automated-catalog-ephemeris-synchronization.md
+```
+
+Automated conjunction screening is documented in:
+
+```text
+docs/architecture/v0.4f2-automated-conjunction-screening.md
 ```
 
 ## Project direction

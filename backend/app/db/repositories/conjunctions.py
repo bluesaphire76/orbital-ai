@@ -47,6 +47,26 @@ class ConjunctionRepository:
             statement
         )
 
+    def get_latest_run_for_source(
+        self,
+        source: str,
+    ) -> ConjunctionRun | None:
+        statement = (
+            select(ConjunctionRun)
+            .where(
+                ConjunctionRun.source == source
+            )
+            .order_by(
+                ConjunctionRun.completed_at.desc(),
+                ConjunctionRun.id.desc(),
+            )
+            .limit(1)
+        )
+
+        return self._session.scalar(
+            statement
+        )
+
     def get_run(
         self,
         run_id: int,

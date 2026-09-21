@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import datetime, timezone
 
 from sgp4.api import accelerated
@@ -12,7 +13,12 @@ from backend.app.services.conjunction_grid import (
     ConjunctionObjectLabel,
 )
 from backend.app.services.conjunction_runs import (
+    ConjunctionExecutionResult,
     execute_conjunction_screening,
+)
+from backend.app.services.conjunction_screening_scheduler import (
+    ConjunctionScreeningAlreadyRunning,
+    conjunction_screening_lock,
 )
 
 
@@ -131,6 +137,29 @@ def _format_object(
     )
 
 
+def run_screening(
+    *,
+    hours: float = 6.0,
+    step_seconds: int = 60,
+    chunk_seconds: int | None = None,
+    start_time: datetime | None = None,
+    candidate_distance_km: float = 10.0,
+    max_relative_speed_km_s: float = 16.0,
+) -> ConjunctionExecutionResult:
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        return execute_conjunction_screening(
+            session,
+            start_time=start_time or datetime.now(timezone.utc),
+            horizon_seconds=int(hours * 3600),
+            step_seconds=step_seconds,
+            candidate_distance_km=candidate_distance_km,
+            max_relative_speed_km_s=max_relative_speed_km_s,
+            source="canonical",
+            chunk_seconds=chunk_seconds,
+        )
+
+
 def main() -> None:
     args = parse_args()
 
@@ -138,37 +167,19 @@ def main() -> None:
         args
     )
 
-    start_time = args.start_time or datetime.now(timezone.utc)
-
-    horizon_seconds = int(
-        args.hours * 3600
-    )
-
-    session_factory = (
-        get_session_factory()
-    )
-
-    with session_factory() as session:
-        execution = (
-            execute_conjunction_screening(
-                session,
-                start_time=start_time,
-                horizon_seconds=(
-                    horizon_seconds
-                ),
-                step_seconds=(
-                    args.step_seconds
-                ),
-                candidate_distance_km=(
-                    args.candidate_distance_km
-                ),
-                max_relative_speed_km_s=(
-                    args.max_relative_speed_km_s
-                ),
-                source="canonical",
+    try:
+        with conjunction_screening_lock():
+            execution = run_screening(
+                hours=args.hours,
+                step_seconds=args.step_seconds,
                 chunk_seconds=args.chunk_seconds,
+                start_time=args.start_time,
+                candidate_distance_km=args.candidate_distance_km,
+                max_relative_speed_km_s=args.max_relative_speed_km_s,
             )
-        )
+    except ConjunctionScreeningAlreadyRunning as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2) from exc
 
     result = execution.result
 
