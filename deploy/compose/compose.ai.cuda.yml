@@ -1,0 +1,104 @@
+services:
+  api:
+    environment:
+      ORBITAL_AI_ENABLED: "true"
+      ORBITAL_AI_PROVIDER: llama.cpp
+      ORBITAL_AI_BASE_URL: http://llama-server:8080
+      ORBITAL_AI_API_KEY: ${ORBITAL_AI_API_KEY:?ORBITAL_AI_API_KEY is required}
+      ORBITAL_AI_MODEL: ${ORBITAL_AI_MODEL:?ORBITAL_AI_MODEL is required}
+      ORBITAL_AI_CONNECT_TIMEOUT_SECONDS: ${ORBITAL_AI_CONNECT_TIMEOUT_SECONDS:-3}
+      ORBITAL_AI_TIMEOUT_SECONDS: ${ORBITAL_AI_TIMEOUT_SECONDS:-45}
+      ORBITAL_AI_MAX_OUTPUT_TOKENS: ${ORBITAL_AI_MAX_OUTPUT_TOKENS:-512}
+      ORBITAL_AI_MAX_QUEUE: ${ORBITAL_AI_MAX_QUEUE:-20}
+      ORBITAL_AI_CONCURRENCY: ${ORBITAL_AI_CONCURRENCY:-1}
+      ORBITAL_AI_TEMPERATURE: ${ORBITAL_AI_TEMPERATURE:-0.1}
+    networks:
+      - app
+      - data
+      - observability
+      - ai
+
+  llama-server:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:98b8502c7d6f4f5221f44ba8606c8f61b049c176caae5746d4956115adad23e3
+    platform: linux/amd64
+    user: "1000:1000"
+    restart: "on-failure:3"
+    environment:
+      LLAMA_API_KEY: ${ORBITAL_AI_API_KEY:?ORBITAL_AI_API_KEY is required}
+    entrypoint:
+      - /opt/orbitalai/start-llama-cuda.sh
+    command:
+      - --model
+      - /models/Qwen3-8B-Q4_K_M.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size
+      - ${ORBITAL_AI_CONTEXT_SIZE:-4096}
+      - --batch-size
+      - "512"
+      - --ubatch-size
+      - "128"
+      - --n-predict
+      - ${ORBITAL_AI_MAX_OUTPUT_TOKENS:-512}
+      - --parallel
+      - "1"
+      - --alias
+      - ${ORBITAL_AI_MODEL:?ORBITAL_AI_MODEL is required}
+      - --device
+      - CUDA0
+      - --n-gpu-layers
+      - all
+      - --split-mode
+      - none
+      - --main-gpu
+      - "0"
+      - --fit
+      - "off"
+      - --op-offload
+      - --kv-offload
+      - --flash-attn
+      - "on"
+      - --perf
+      - --reasoning
+      - "off"
+      - --offline
+      - --no-ui
+      - --metrics
+      - --log-verbosity
+      - "4"
+    volumes:
+      - type: bind
+        source: ${ORBITAL_AI_MODEL_DIR:?ORBITAL_AI_MODEL_DIR is required}
+        target: /models
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../../scripts/start_llama_cuda.sh
+        target: /opt/orbitalai/start-llama-cuda.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - ai
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+
+networks:
+  ai:
+    name: orbitalai-ai
+    internal: true

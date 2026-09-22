@@ -6,6 +6,7 @@ from prometheus_client import (
     REGISTRY,
 )
 
+from backend.app.api.routes.ai import router as ai_router
 from backend.app.api.routes.catalog import (
     router as catalog_router,
 )
@@ -21,6 +22,8 @@ from backend.app.api.routes.visualization import (
 from backend.app.core.metrics import (
     initialize_metrics,
 )
+from backend.app.observability.ai_metrics import get_ai_metrics
+from backend.app.services.ai.config import get_ai_config
 
 
 def create_app(*, metrics_registry=None) -> FastAPI:
@@ -34,10 +37,14 @@ def create_app(*, metrics_registry=None) -> FastAPI:
         docs_url="/docs",
         redoc_url=None,
     )
+    app.state.ai_metrics = get_ai_metrics(metrics_registry)
+    app.state.ai_metrics.set_queue_capacity(get_ai_config().max_queue)
 
     app.include_router(
         health_router
     )
+
+    app.include_router(ai_router)
 
     app.include_router(
         catalog_router
