@@ -8,6 +8,7 @@ from backend.app.db.models.conjunction import (
     ConjunctionRun,
 )
 from backend.app.db.models.orbital_object import OrbitalObject
+from backend.app.db.models.orbital_element import OrbitalElement
 
 
 class ConjunctionRepository:
@@ -119,3 +120,40 @@ class ConjunctionRepository:
         return self._session.execute(
             statement
         ).all()
+
+    def get_event_grounding(self, event_id: int):
+        """Load an event and only the exact persisted records it references."""
+        primary_object = aliased(OrbitalObject)
+        secondary_object = aliased(OrbitalObject)
+        primary_element = aliased(OrbitalElement)
+        secondary_element = aliased(OrbitalElement)
+
+        statement = (
+            select(
+                ConjunctionEvent,
+                ConjunctionRun,
+                primary_object,
+                secondary_object,
+                primary_element,
+                secondary_element,
+            )
+            .outerjoin(ConjunctionRun, ConjunctionRun.id == ConjunctionEvent.run_id)
+            .outerjoin(
+                primary_object,
+                primary_object.id == ConjunctionEvent.primary_object_id,
+            )
+            .outerjoin(
+                secondary_object,
+                secondary_object.id == ConjunctionEvent.secondary_object_id,
+            )
+            .outerjoin(
+                primary_element,
+                primary_element.id == ConjunctionEvent.primary_element_id,
+            )
+            .outerjoin(
+                secondary_element,
+                secondary_element.id == ConjunctionEvent.secondary_element_id,
+            )
+            .where(ConjunctionEvent.id == event_id)
+        )
+        return self._session.execute(statement).one_or_none()

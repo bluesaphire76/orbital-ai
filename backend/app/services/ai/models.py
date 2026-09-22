@@ -7,7 +7,7 @@ from typing import Mapping
 
 class AITask(str, Enum):
     FOUNDATION_PROBE = "foundation_probe"
-    CONJUNCTION_BRIEF = "conjunction_brief"
+    CONJUNCTION_ANALYST_BRIEF = "conjunction_analyst_brief"
 
 
 class ChatRole(str, Enum):

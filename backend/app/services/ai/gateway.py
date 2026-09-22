@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from time import perf_counter
 
 from backend.app.observability.ai_metrics import AIMetrics
@@ -8,7 +9,9 @@ from backend.app.services.ai.config import AIConfig
 from backend.app.services.ai.errors import (
     AIDisabledError,
     AIError,
+    AIInvalidResponseError,
     AIQueueFullError,
+    AIProviderUnavailableError,
     AITimeoutError,
 )
 from backend.app.services.ai.models import (
@@ -60,7 +63,12 @@ class AIGateway:
             )
         return health
 
-    async def generate(self, request: GenerationRequest) -> GenerationResult:
+    async def generate(
+        self,
+        request: GenerationRequest,
+        *,
+        validate_result: Callable[[GenerationResult], None] | None = None,
+    ) -> GenerationResult:
         task = request.task
         if not self._config.enabled:
             if self._metrics is not None:
@@ -99,6 +107,8 @@ class AIGateway:
             try:
                 async with asyncio.timeout(self._config.timeout_seconds):
                     result = await self._provider.chat_completion(request)
+                    if validate_result is not None:
+                        validate_result(result)
             except (TimeoutError, AITimeoutError) as exc:
                 if self._metrics is not None:
                     self._metrics.observe_request(
@@ -108,10 +118,17 @@ class AIGateway:
                 if isinstance(exc, AITimeoutError):
                     raise
                 raise AITimeoutError() from exc
-            except AIError:
+            except AIError as exc:
                 if self._metrics is not None:
+                    if isinstance(exc, AIProviderUnavailableError):
+                        self._metrics.set_runtime_ready(False)
+                    outcome = (
+                        "validation_error"
+                        if isinstance(exc, AIInvalidResponseError)
+                        else "error"
+                    )
                     self._metrics.observe_request(
-                        task, "error", perf_counter() - started
+                        task, outcome, perf_counter() - started
                     )
                 raise
             except Exception:
@@ -122,6 +139,7 @@ class AIGateway:
                 raise
 
             if self._metrics is not None:
+                self._metrics.set_runtime_ready(True)
                 self._metrics.observe_request(
                     task, "success", perf_counter() - started
                 )

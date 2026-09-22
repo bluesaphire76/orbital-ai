@@ -25,8 +25,9 @@ The v0.4 work introduces the Orbital Operations Workspace, including:
 
 The previous stable release is **v0.3.0**.
 
-The current v0.5 development branch also contains an optional local AI
-foundation. It is disabled by default and does not change the v0.4 runtime.
+The current v0.5 development work also contains an optional local AI
+foundation and a fixed-input Conjunction Analyst Brief backend. AI remains
+disabled by default and does not change the v0.4 deterministic runtime.
 
 ## Core principles
 
@@ -58,10 +59,12 @@ AI must not replace deterministic propagation, screening or collision-risk calcu
 
 The v0.5A foundation adds a bounded backend gateway for a separately managed
 NVIDIA CUDA llama.cpp runtime. OrbitalAI does not support CPU inference,
-partial model offload, or automatic CPU fallback. It exposes only read-only
-capability and health endpoints; there is no public free-form prompt endpoint.
+partial model offload, or automatic CPU fallback. It exposes capability and
+health endpoints plus a brief endpoint grounded in one persisted event; there
+is no public free-form prompt endpoint.
 Models and runtime images are not included or downloaded automatically. See
-[v0.5 Local AI Foundation](docs/architecture/v0.5-local-ai-foundation.md).
+[v0.5 Local AI Foundation](docs/architecture/v0.5-local-ai-foundation.md) and
+[v0.5B.1 Conjunction Analyst Brief](docs/architecture/v0.5b1-conjunction-analyst-brief.md).
 
 ### Local-first architecture
 
@@ -390,6 +393,12 @@ The optional local AI gateway foundation is documented in:
 
 ```text
 docs/architecture/v0.5-local-ai-foundation.md
+```
+
+The fixed-input Conjunction Analyst Brief backend is documented in:
+
+```text
+docs/architecture/v0.5b1-conjunction-analyst-brief.md
 ```
 
 ## Project direction
