@@ -236,6 +236,7 @@ def test_dashboard_is_provisioned_with_bounded_operational_queries():
         27, 15, 16,
         28, 18, 19, 20, 21, 22, 23,
         29, 17,
+        30, 31, 32, 33, 34, 35, 36,
     ]
 
     section_rows = [
@@ -250,6 +251,7 @@ def test_dashboard_is_provisioned_with_bounded_operational_queries():
         "Ingestion",
         "Automated Catalog Synchronization",
         "Alerting",
+        "Local AI",
     ]
     assert all(
         panel["gridPos"]["x"] == 0
@@ -271,6 +273,9 @@ def test_dashboard_is_provisioned_with_bounded_operational_queries():
         20: (12, 36, 6, 5), 21: (18, 36, 6, 5),
         22: (0, 41, 12, 5), 23: (12, 41, 12, 5),
         17: (0, 47, 24, 4),
+        31: (0, 52, 6, 6), 32: (6, 52, 18, 6),
+        33: (0, 58, 12, 7), 34: (12, 58, 12, 7),
+        35: (0, 65, 12, 7), 36: (12, 65, 12, 7),
     }
     assert {
         panel["id"]: (
@@ -385,3 +390,54 @@ def test_dashboard_is_provisioned_with_bounded_operational_queries():
         for target in catalog_panels[title]["targets"]
     )
     assert (root / "observability/grafana/provisioning/dashboards/operations.yml").exists()
+
+    ai_panels = {
+        panel["title"]: panel
+        for panel in dashboard["panels"]
+        if 31 <= panel["id"] <= 36
+    }
+    assert set(ai_panels) == {
+        "AI Provider Availability",
+        "AI Requests by Task and Status",
+        "AI Request Duration",
+        "AI Prompt and Completion Tokens",
+        "AI Active Requests and Queue",
+        "AI Errors/Rejections",
+    }
+    ai_expressions = {
+        target["expr"]
+        for panel in ai_panels.values()
+        for target in panel["targets"]
+    }
+    expected_ai_metrics = {
+        "orbitalai_ai_runtime_ready",
+        "orbitalai_ai_requests_total",
+        "orbitalai_ai_request_duration_seconds_bucket",
+        "orbitalai_ai_prompt_tokens_total",
+        "orbitalai_ai_completion_tokens_total",
+        "orbitalai_ai_active_requests",
+        "orbitalai_ai_queue_depth",
+        "orbitalai_ai_concurrency_capacity",
+        "orbitalai_ai_queue_capacity",
+    }
+    assert set(re.findall(
+        r"orbitalai_ai_[a-z_]+",
+        "\n".join(ai_expressions),
+    )) == expected_ai_metrics
+    assert any("conjunction_analyst_brief" in expression for expression in ai_expressions)
+    assert all(
+        forbidden not in expression
+        for expression in ai_expressions
+        for forbidden in (
+            "event_id", "run_id", "object_id", "norad", "model_path",
+            "grounding_sha256", "request_id", "instance=", "pod=", "container=",
+        )
+    )
+    assert all(
+        panel["datasource"]["uid"] == "orbitalai-prometheus"
+        and all(
+            target["datasource"]["uid"] == "orbitalai-prometheus"
+            for target in panel["targets"]
+        )
+        for panel in ai_panels.values()
+    )

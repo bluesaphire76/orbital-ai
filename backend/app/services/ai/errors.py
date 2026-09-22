@@ -26,5 +26,6 @@ class AIProviderUnavailableError(AIError):
 
 
 class AIInvalidResponseError(AIError):
-    def __init__(self) -> None:
+    def __init__(self, reason_code: str | None = None) -> None:
+        self.reason_code = reason_code
         super().__init__("Local AI provider returned an invalid response")

@@ -2017,6 +2017,101 @@
           "valueSize": 20
         }
       }
+    },
+    {
+      "id": 30,
+      "title": "Local AI",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {"x": 0, "y": 51, "w": 24, "h": 1},
+      "panels": []
+    },
+    {
+      "id": 31,
+      "title": "AI Provider Availability",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 0, "y": 52, "w": 6, "h": 6},
+      "description": "One when the configured local AI provider most recently responded successfully.",
+      "targets": [{
+        "refId": "A", "expr": "orbitalai_ai_runtime_ready", "legendFormat": "Provider ready",
+        "instant": true, "range": false, "format": "time_series",
+        "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}
+      }],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "min": 0, "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}, "overrides": []},
+      "options": {"colorMode": "value", "graphMode": "none", "textMode": "auto", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "justifyMode": "center", "wideLayout": true, "text": {"titleSize": 12, "valueSize": 20}}
+    },
+    {
+      "id": 32,
+      "title": "AI Requests by Task and Status",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 6, "y": 52, "w": 18, "h": 6},
+      "description": "Generation request outcomes for the fixed local AI task allowlist.",
+      "targets": [{
+        "refId": "A", "expr": "sum by (task, outcome) (increase(orbitalai_ai_requests_total{task=~\"foundation_probe|conjunction_analyst_brief\"}[$__rate_interval]))", "legendFormat": "{{task}} / {{outcome}}",
+        "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}
+      }],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": false, "axisCenteredZero": false, "axisColorMode": "text", "stacking": {"mode": "none", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "id": 33,
+      "title": "AI Request Duration",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 0, "y": 58, "w": 12, "h": 7},
+      "description": "Median and ninety-fifth percentile generation duration by bounded task.",
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum by (le, task) (rate(orbitalai_ai_request_duration_seconds_bucket{task=\"conjunction_analyst_brief\"}[$__rate_interval])))", "legendFormat": "p50 {{task}}", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le, task) (rate(orbitalai_ai_request_duration_seconds_bucket{task=\"conjunction_analyst_brief\"}[$__rate_interval])))", "legendFormat": "p95 {{task}}", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 2, "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": false, "axisCenteredZero": false, "axisColorMode": "text", "stacking": {"mode": "none", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "id": 34,
+      "title": "AI Prompt and Completion Tokens",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 12, "y": 58, "w": 12, "h": 7},
+      "description": "Provider-reported token totals for the conjunction analyst brief.",
+      "targets": [
+        {"refId": "A", "expr": "increase(orbitalai_ai_prompt_tokens_total{task=\"conjunction_analyst_brief\"}[$__rate_interval])", "legendFormat": "Prompt", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}},
+        {"refId": "B", "expr": "increase(orbitalai_ai_completion_tokens_total{task=\"conjunction_analyst_brief\"}[$__rate_interval])", "legendFormat": "Completion", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": false, "axisCenteredZero": false, "axisColorMode": "text", "stacking": {"mode": "none", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "id": 35,
+      "title": "AI Active Requests and Queue",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 0, "y": 65, "w": 12, "h": 7},
+      "description": "Current generation concurrency and bounded waiting queue utilization.",
+      "targets": [
+        {"refId": "A", "expr": "orbitalai_ai_active_requests", "legendFormat": "Active", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}},
+        {"refId": "B", "expr": "orbitalai_ai_queue_depth", "legendFormat": "Waiting", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}},
+        {"refId": "C", "expr": "orbitalai_ai_concurrency_capacity", "legendFormat": "Concurrency capacity", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}},
+        {"refId": "D", "expr": "orbitalai_ai_queue_capacity", "legendFormat": "Queue capacity", "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": false, "axisCenteredZero": false, "axisColorMode": "text", "stacking": {"mode": "none", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "id": 36,
+      "title": "AI Errors/Rejections",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"},
+      "gridPos": {"x": 12, "y": 65, "w": 12, "h": 7},
+      "description": "Bounded failure outcomes, including invalid grounding and rejected provider output.",
+      "targets": [{
+        "refId": "A", "expr": "sum by (task, outcome) (increase(orbitalai_ai_requests_total{task=\"conjunction_analyst_brief\",outcome!=\"success\"}[$__rate_interval]))", "legendFormat": "{{task}} / {{outcome}}",
+        "datasource": {"type": "prometheus", "uid": "orbitalai-prometheus"}
+      }],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "custom": {"drawStyle": "bars", "lineInterpolation": "linear", "lineWidth": 1, "fillOpacity": 30, "showPoints": "never", "spanNulls": false, "axisCenteredZero": false, "axisColorMode": "text", "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     }
   ],
   "templating": {

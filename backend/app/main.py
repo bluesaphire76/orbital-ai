@@ -24,6 +24,8 @@ from backend.app.core.metrics import (
 )
 from backend.app.observability.ai_metrics import get_ai_metrics
 from backend.app.services.ai.config import get_ai_config
+from backend.app.services.ai.gateway import AIGateway
+from backend.app.services.ai.llama_cpp import LlamaCppProvider
 
 
 def create_app(*, metrics_registry=None) -> FastAPI:
@@ -37,8 +39,13 @@ def create_app(*, metrics_registry=None) -> FastAPI:
         docs_url="/docs",
         redoc_url=None,
     )
+    ai_config = get_ai_config()
     app.state.ai_metrics = get_ai_metrics(metrics_registry)
-    app.state.ai_metrics.set_queue_capacity(get_ai_config().max_queue)
+    app.state.ai_gateway = AIGateway(
+        ai_config,
+        LlamaCppProvider(ai_config),
+        metrics=app.state.ai_metrics,
+    )
 
     app.include_router(
         health_router

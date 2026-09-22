@@ -8,7 +8,15 @@ from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, REGI
 from backend.app.services.ai.models import AITask
 
 
-AI_OUTCOMES = ("success", "error", "timeout", "queue_full", "disabled")
+AI_OUTCOMES = (
+    "success",
+    "error",
+    "timeout",
+    "queue_full",
+    "disabled",
+    "grounding_error",
+    "validation_error",
+)
 AI_TASKS = tuple(task.value for task in AITask)
 
 
